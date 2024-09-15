@@ -1,0 +1,36 @@
+codi,nom,unitat,acronim,tipus,decimals
+1000,Temperatura mitjana diària,°C,TM,AD,1
+1001,Temperatura màxima diària + hora,°C,TX,AD,1
+1002,Temperatura mínima diària + hora,°C,TN,AD,1
+1003,Temperatura mitjana diària clàssica,°C,TMc,AD,1
+1004,Amplitud tèrmica diària,°C,AT,AD,1
+1100,Humitat relativa mitjana diària,%,HRM,AD,0
+1101,Humitat relativa màxima diària + data,%,HRX,AD,0
+1102,Humitat relativa mínima diària + data,%,HRN,AD,0
+1200,Pressió atmosfèrica mitjana diària,hPa,PM,AD,1
+1201,Pressió atmosfèrica màxima diària + hora,hPa,PX,AD,1
+1202,Pressió atmosfèrica mínima diària + hora,hPa,PN,AD,1
+1300,Precipitació acumulada diària,mm,PPT,AD,1
+1301,Precipitació acumulada diària (8-8 h),mm,PPTc,AD,1
+1302,Precipitació màxima en 1 min (diària) + hora ,mm,PPTx1min,AD,1
+1303,Precipitació màxima en 1 h (diària) + hora ,mm,PPTx1h,AD,1
+1304,Precipitació màxima en 30 min (diària)+ hora ,mm,PPTx30min,AD,1
+1305,Precipitació màxima en 10 min (diària) + hora,mm,PPTx10min,AD,1
+1400,Irradiació solar global diària,MJ/m2,RS24h,AD,1
+1503,Velocitat mitjana diària del vent 10 m (esc.),m/s,VVM10,AD,1
+1504,Velocitat mitjana diària del vent 6 m (esc.),m/s,VVM6,AD,1
+1505,Velocitat mitjana diària del vent 2 m (esc.),m/s,VVM2,AD,1
+1509,Direcció mitjana diària del vent 10 m (m. 1) ,°,DVM10,AD,0
+1510,Direcció mitjana diària del vent 6 m (m. 1) ,°,DVM6,AD,0
+1511,Direcció mitjana diària del vent 2 m (m. 1),°,DVM2,AD,0
+1512,Ratxa màxima diària del vent 10 m + hora ,m/s,VVX10,AD,1
+1513,Ratxa màxima diària del vent 6 m + hora ,m/s,VVX6,AD,1
+1514,Ratxa màxima diària del vent 2 m + hora,m/s,VVX2,AD,1
+1515,Direcció de la ratxa màx. diària de vent 10 m,°,DVVX10,AD,0
+1516,Direcció de la ratxa màx. diària de vent 6 m,°,DVVX6,AD,0
+1517,Direcció de la ratxa màx. diària de vent 2 m,°,DVVX2,AD,0
+1600,Gruix de neu mitjà diari,cm,GNEUM,AD,0
+1601,Gruix de neu màxim diari + hora,cm,GNEUX,AD,0
+1602,Gruix de neu nova acumulada diària,cm,GNEU24h,AD,0
+1603,Gruix de neu mínim diari + hora,cm,GNEUN,AD,0
+1700,Evapotranspiració de referència,mm,ETo,AD,2

@@ -1,0 +1,51 @@
+codi,nom,unitat,acronim,tipus,decimals
+3000,Temperatura mitjana anual,°C,TMM,AN,1
+3001,Temperatura màxima abs. anual + data,°C,TXX,AN,1
+3002,Temperatura mínima abs. anual + data,°C,TNN,AN,1
+3003,Temperatura màxima mitjana anual,°C,TXM,AN,1
+3004,Temperatura mínima mitjana anual,°C,TNM,AN,1
+3005,Temperatura mitjana anual clàssica ,°C,TMMc,AN,1
+3006,Núm. anual de dies de glaçada,dies,dG,AN,0
+3007,Amplitud tèrmica màxima anual + dia,°C,ATX,AN,1
+3008,Amplitud tèrmica mitjana anual,°C,ATM,AN,1
+3009,Amplitud tèrmica extrema anual,°C,ATE,AN,1
+3010,Oscil·lació tèrmica anual,°C,OTa,AN,1
+3100,Humitat relativa mitjana anual,%,HRMM,AN,0
+3101,Humitat relativa màxima absoluta anual + data,%,HRXX,AN,0
+3102,Humitat relativa mínima absoluta anual + data,%,HRNN,AN,0
+3103,Humitat relativa màxima mitjana anual,%,HRXM,AN,0
+3104,Humitat relativa mínima mitjana anual,%,HRNM,AN,0
+3200,Pressió atmosfèrica mitjana anual,hPa,PMM,AN,1
+3201,Pressió atmosfèrica màxima abs. anual + data,hPa,PXX,AN,1
+3202,Pressió atmosfèrica mínima abs. anual + data,hPa,PNN,AN,1
+3203,Pressió atmosfèrica màxima mitjana anual,hPa,PXM,AN,1
+3204,Pressió atmosfèrica mínima mitjana anual,hPa,PNM,AN,1
+3300,Precipitació acumulada anual,mm,PPT,AN,1
+3301,Precipitació acumulada anual (8-8 h),mm,PPTc,AN,1
+3302,Precipitació màx. en 1 minut (anual) + data ,mm,PPTx1min,AN,1
+3303,Precipitació màx. en 24 h (anual) + data,mm,PPTx24h,AN,1
+3304,Precipitació màx. en 24 h (8-8 h)(anual)+data,mm,PPTcx24h,AN,1
+3305,Núm. anual de dies de precipitació > 0 mm,dies,dPPT>0,AN,0
+3306,"Núm. anual de dies de precipitació > 0,2 mm",dies,"dPPT>0,2",AN,0
+3307,Precipitació màxima en 1 h (anual) + hora,mm,PPTx1h,AN,1
+3308,Precipitació màxima en 30 min (anual) + hora,mm,PPTx30min,AN,1
+3309,Precipitació màxima en 10 min (anual) + hora,mm,PPTx10min,AN,1
+3400,Mitj. anual d'irradiació solar global diària,MJ/m2,RS24hM,AN,1
+3503,Velocitat mitjana anual del vent 10 m (esc.),m/s,VVMM10,AN,1
+3504,Velocitat mitjana anual del vent 6 m (esc.),m/s,VVMM6,AN,1
+3505,Velocitat mitjana anual del vent 2 m (esc.),m/s,VVMM2,AN,1
+3509,Direcció mitjana anual del vent 10 m (m. 1),°,DVMM10,AN,0
+3510,Direcció mitjana anual del vent  6 m (m. 1) ,°,DVMM6,AN,0
+3511,Direcció mitjana anual del vent 2 m (m. 1),°,DVMM2,AN,0
+3512,Ratxa màxima abs. anual del vent 10 m + data,m/s,VVXX10,AN,1
+3513,Ratxa màxima abs. anual del vent 6 m + data,m/s,VVXX6,AN,1
+3514,Ratxa màxima abs. anual del vent 2 m + data,m/s,VVXX2,AN,1
+3515,Direcció de la ratxa màxima anual vent 10 m,°,DVVXX10,AN,0
+3516,Direcció de la ratxa màxima anual vent 6 m,°,DVVXX6,AN,0
+3517,Direcció de la ratxa màxima anual vent 2 m,°,DVVXX2,AN,0
+3518,Ratxa màxima mitjana anual del vent 10 m,m/s,VVXM10,AN,1
+3519,Ratxa màxima mitjana anual del vent 6 m,m/s,VVXM6,AN,1
+3520,Ratxa màxima mitjana anual del vent 2 m,m/s,VVXM2,AN,1
+3600,Gruix de neu mitjà anual,cm,GNEUMM,AN,0
+3601,Gruix de neu màxima anual + data,cm,GNEUXX,AN,0
+3602,Gruix màxim anual de neu nova + data,cm,GNEUx24h,AN,0
