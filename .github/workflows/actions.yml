@@ -2,38 +2,35 @@ name: run data_extraction
 
 on:
   schedule:
-    - cron: '*/2 * * * *'
+    - cron: '*/2 * * * *'  # Se ejecuta cada 2 minutos
 
 jobs:
-  build:
+  run-script:
     runs-on: ubuntu-latest
+
     steps:
+      - name: Checkout repository content
+        uses: actions/checkout@v2  # Revisa el contenido del repositorio
 
-      - name: checkout repo content
-        uses: actions/checkout@v2 # checkout the repository content to github runner
-
-      - name: setup python
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.9' # install the python version needed
+          python-version: '3.9'  # Define la versión de Python
 
-      - name: install python packages
+      - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r requirements.txt  # Instala las dependencias del archivo
 
-      - name: execute py script # run main.py
-        run: python DataExtraction/main.py
+      - name: Execute Python script
+        run: python DataExtraction/main.py  # Ejecuta el script main.py en el directorio DataExtraction
 
-      - name: commit files
+      - name: Commit and push changes
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add -A
-          git diff-index --quiet HEAD || (git commit -a -m "updated logs" --allow-empty)
-
-      - name: push changes
-        uses: ad-m/github-push-action@v0.6.0
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: main
+          git add -A  # Añade todos los archivos modificados
+          git diff-index --quiet HEAD || git commit -m "Auto-updated by GitHub Action"  # Hace commit solo si hay cambios
+          git push origin main  # Empuja los cambios a la rama main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Usa el token secreto de GitHub para la autenticación
