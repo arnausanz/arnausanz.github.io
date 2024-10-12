@@ -1,0 +1,5 @@
+name: run data_extraction
+
+on:
+  schedule:
+    - cron: '0 12 * * *'

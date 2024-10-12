@@ -1,6 +1,3 @@
-import json
-import os
-
 import requests
 import pandas as pd
 from utils import calling_api_message, set_meteocat_api_key, save_df_to_csv
