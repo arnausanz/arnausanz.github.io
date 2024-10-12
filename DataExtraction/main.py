@@ -1,6 +1,12 @@
 import os
 
-with open("../Data/test.txt", "a") as file:
+# Obtener la ruta absoluta al directorio raíz del repositorio
+repo_root = os.getcwd()
+
+# Crear una ruta absoluta para el archivo que deseas escribir
+file_path = os.path.join(repo_root, 'Data', 'test.txt')
+
+with open(file_path, "a") as file:
     """
     Testing automation --> Write the day and time of the execution in a file
     """
