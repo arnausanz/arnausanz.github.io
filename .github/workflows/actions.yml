@@ -2,7 +2,7 @@ name: run data_extraction
 
 on:
   schedule:
-    - cron: '50 20 * * *'
+    - cron: '55 19 * * *'
 
 jobs:
   build:
