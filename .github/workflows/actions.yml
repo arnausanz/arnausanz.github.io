@@ -2,7 +2,7 @@ name: run data_extraction
 
 on:
   schedule:
-    - cron: '*/2 * * * *'  # Se ejecuta cada 2 minutos
+    - cron: '*/30 * * * *'  # Se ejecuta cada 2 minutos
 
 jobs:
   run-script:
