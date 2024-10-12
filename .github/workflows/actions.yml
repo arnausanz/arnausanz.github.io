@@ -30,7 +30,6 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add -A  # Añade todos los archivos modificados
-          git diff-index --quiet HEAD || git commit -m "Auto-updated by GitHub Action"  # Hace commit solo si hay cambios
           git push origin main  # Empuja los cambios a la rama main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Usa el token secreto de GitHub para la autenticación
