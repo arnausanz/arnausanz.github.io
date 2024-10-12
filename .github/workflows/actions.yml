@@ -25,13 +25,15 @@ jobs:
       - name: Execute Python script
         run: python DataExtraction/main.py  # Ejecuta el script main.py en el directorio DataExtraction
 
-      - name: Commit and push changes
+      - name: commit files
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add -A  # Añade todos los archivos modificados
-          git diff-index --quiet HEAD || git commit -m "Auto-updated by GitHub Action"
-          git pull --rebase origin main  # Hacer pull y rebase
-          git push origin main  # Empuja los cambios a la rama main
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Usa el token secreto de GitHub para la autenticación
+            git config --local user.email "action@github.com"
+            git config --local user.name "GitHub Action"
+            git add -A
+            git diff-index --quiet HEAD || (git commit -a -m "updated logs" --allow-empty)
+
+      - name: push changes
+        uses: ad-m/github-push-action@v0.6.0
+        with:
+            github_token: ${{ secrets.GITHUB_TOKEN }}
+            branch: main
