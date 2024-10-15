@@ -3,7 +3,7 @@ import pandas as pd
 from utils import calling_api_message, set_meteocat_api_key, save_df_to_csv, check_str_int, save_df_to_json, print_response_info
 
 """
-This script is used to extract daily data from meteocat_raw API.
+This file is used to extract daily data from meteocat_raw API.
 In the metadata files can be found the variable codes and station codes.
 """
 
