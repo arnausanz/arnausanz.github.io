@@ -17,8 +17,8 @@ def set_meteocat_api_key() -> str:
     load_dotenv()
     return os.getenv("METEOCAT_API_KEY")
 
-def parse_date(date: str) -> datetime:
-    return datetime.strptime(date, '%Y-%m-%dZ')
+def parse_date(date: str, input_format="%Y-%m-%dZ") -> datetime:
+    return datetime.strptime(date, input_format)
 
 def save_df_to_csv(df, file_name, path = 'data/raw', header = True) -> None:
     project_dir = get_root_dir()
