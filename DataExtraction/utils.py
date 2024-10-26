@@ -1,6 +1,6 @@
 import os
 from ast import parse
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pandas as pd
 from dotenv import load_dotenv
@@ -41,3 +41,12 @@ def check_str_int(value):
 
 def get_root_dir():
     return os.path.dirname(os.path.dirname(__file__))
+
+def get_date(date_str):
+    if date_str == 'yesterday':
+        return_date_value = datetime.now().date() - timedelta(days=1)
+    elif date_str == 'today':
+        return_date_value = datetime.now().date()
+    else:
+        return_date_value = None
+    return return_date_value.strftime("%d/%m/%Y")
