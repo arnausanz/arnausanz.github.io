@@ -49,10 +49,11 @@ def get_daily_data(date_from, date_to, sensor_code = 'all'):
         url = _EMBASSAMENT_DATA_BASE_URL[0] + sensor + _EMBASSAMENT_DATA_BASE_URL[1] + date_from + _EMBASSAMENT_DATA_BASE_URL[2] + date_to + _EMBASSAMENT_DATA_BASE_URL[3]
         response = requests.get(url)
         df = pd.json_normalize(response.json(), record_path=['observations'])
+        df['sensor'] = sensor
         print(df)
 
 # TODO --> S'ha de fer que el get_daily_data retorni un dataframe amb totes les dades i que es guardi fusioni amb el aca_daily_all.csv
-# get_daily_data(None, None)
+get_daily_data(None, None, 'CALC000004')
 
 def get_catalog(catalog_type="embassament"):
     url = _CATALOG_BASE_URL + catalog_type
