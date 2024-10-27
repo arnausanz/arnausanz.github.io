@@ -1,6 +1,7 @@
 import os
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
+import pandas as pd
 
 def calling_api_message(api_name, more_info = None):
     print(f"Calling {api_name} API")
@@ -47,3 +48,15 @@ def get_date(date_str):
     else:
         return_date_value = None
     return return_date_value.strftime("%d/%m/%Y")
+
+def update_today_data_file(variables = ('aca', '1300')):
+    if 'aca' in variables:
+        df = pd.read_csv(get_root_dir() + '/data/processed/aca/aca_daily_all.csv')
+        df = df[df['date'] == get_date('today')]
+        save_df_to_csv(df, 'aca_daily_today', 'data/processed/aca/')
+    if '1300' in variables:
+        df = pd.read_csv(get_root_dir() + '/data/processed/meteocat/meteocat_1300_daily_all.csv')
+        df = df[df['data'] == get_date('today')]
+        save_df_to_csv(df, 'meteocat_1300_daily_today', 'data/processed/meteocat/')
+
+update_today_data_file()

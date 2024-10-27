@@ -30,3 +30,4 @@ def save_backup(file, backup_path = 'data/backup/'):
     utils.save_df_to_csv(pd.read_csv(file), 'backup_' + file.split('/')[-1].split('.')[0] + '_' + datetime.datetime.strftime(datetime.datetime.today(), '%d_%m_%Y'), backup_path)
 
 # save_backup(utils.get_root_dir() + '/' + 'data/processed/aca/aca_daily_all.csv') # --> Save aca_daily_all.csv backup
+# save_backup(utils.get_root_dir() + '/' + 'data/processed/meteocat/meteocat_1300_daily_all.csv') # --> Save meteocat_1300_daily_all.csv backup
