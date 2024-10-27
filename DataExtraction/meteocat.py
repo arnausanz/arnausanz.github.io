@@ -75,12 +75,11 @@ def join_meteocat_data(existing_data, new_data, overwrite=True):
     if overwrite:
         utils.save_df_to_csv(df, f"meteocat_{new_data['codiVariable'].iloc[0]}_daily_all", path="data/processed/meteocat/")
 
-
+def print_api_usage():
+    print(requests.get('https://api.meteo.cat/quotes/v1/consum-actual', headers=__HEADERS).json())
 
 # save_df_to_csv(get_daily_data("1300",  "1989", "02"), "test7")
 
 # join_meteocat_data(_data_getter("1300"), transform_daily_data(get_daily_data("1300",  "2024", "10")), overwrite=True)
 
-# print(requests.get('https://api.meteo.cat/quotes/v1/consum-actual', headers=__HEADERS).json())
-
-# print(transform_daily_data(get_daily_data("1300",  "2024", "1")))
+# TODO --> implementar la funció que uneix les variables manuals (32 i 38) amb les automàtiques (1000 i 1600) i ajunar-ho al fitxer daily corresponent

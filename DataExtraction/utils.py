@@ -49,7 +49,7 @@ def get_date(date_str):
         return_date_value = None
     return return_date_value.strftime("%d/%m/%Y")
 
-def update_today_data_file(variables = ('aca', '1300')):
+def update_today_data_file(variables = ('aca', '1300', '1000', '1600')):
     if 'aca' in variables:
         df = pd.read_csv(get_root_dir() + '/data/processed/aca/aca_daily_all.csv')
         df = df[df['date'] == get_date('today')]
@@ -58,3 +58,13 @@ def update_today_data_file(variables = ('aca', '1300')):
         df = pd.read_csv(get_root_dir() + '/data/processed/meteocat/meteocat_1300_daily_all.csv')
         df = df[df['data'] == get_date('today')]
         save_df_to_csv(df, 'meteocat_1300_daily_today', 'data/processed/meteocat/')
+    if '1000' in variables:
+        df = pd.read_csv(get_root_dir() + '/data/processed/meteocat/meteocat_1000_daily_all.csv')
+        df = df[df['data'] == get_date('today')]
+        save_df_to_csv(df, 'meteocat_1000_daily_today', 'data/processed/meteocat/')
+    if '1600' in variables:
+        df = pd.read_csv(get_root_dir() + '/data/processed/meteocat/meteocat_1600_daily_all.csv')
+        df = df[df['data'] == get_date('today')]
+        save_df_to_csv(df, 'meteocat_1600_daily_today', 'data/processed/meteocat/')
+
+# update_today_data_file() # --> To get today data files used in visualization
