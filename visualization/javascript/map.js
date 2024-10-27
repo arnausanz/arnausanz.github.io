@@ -38,12 +38,12 @@ var sensorLayer = L.layerGroup();
 var embassamentIcon = L.divIcon({
     className: 'embassament-icon',  // Definim la classe CSS
     html: `
-        <svg width="25" height="25" viewBox="0 0 23 23">
+        <svg width="25" height="25" viewBox="-2.5 -2.5 25.5 25.5">
             <!-- Cercle blau per a l'aigua -->
-            <circle cx="12" cy="12" r="10" fill="#1E90FF" stroke="#104E8B" stroke-width="2"/>
+            <circle cx="12" cy="12" r="10" fill="#6BB8FF" stroke="#329DFF" stroke-width="1.5"/>
             <!-- Ones blanques -->
-            <path d="M8,14 Q12,12 16,14 Q12,16 8,14 Z" fill="white" opacity="0.6"/>
-            <path d="M8,16 Q12,14 16,16 Q12,18 8,16 Z" fill="white" opacity="0.6"/>
+            <path d="M6,13 Q12,9 18,13 Q12,17 6,13 Z" fill="#BCDFFF" opacity="1"/>
+            <path d="M6,17 Q12,13 18,17 Q12,21 6,17 Z" fill="#BCDFFF" opacity="1"/>
         </svg>
     `,
     iconSize: [30, 30],
