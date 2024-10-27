@@ -35,6 +35,21 @@ fetch(GeoJson)
 
 var sensorLayer = L.layerGroup();
 
+var embassamentIcon = L.divIcon({
+    className: 'embassament-icon',  // Definim la classe CSS
+    html: `
+        <svg width="25" height="25" viewBox="0 0 23 23">
+            <!-- Cercle blau per a l'aigua -->
+            <circle cx="12" cy="12" r="10" fill="#1E90FF" stroke="#104E8B" stroke-width="2"/>
+            <!-- Ones blanques -->
+            <path d="M8,14 Q12,12 16,14 Q12,16 8,14 Z" fill="white" opacity="0.6"/>
+            <path d="M8,16 Q12,14 16,16 Q12,18 8,16 Z" fill="white" opacity="0.6"/>
+        </svg>
+    `,
+    iconSize: [30, 30],
+    iconAnchor: [15, 15]
+});
+
 fetch("data/processed/aca/sensor_metadata.csv")
     .then(response => response.text())
     .then(csvText => {
@@ -56,7 +71,7 @@ fetch("data/processed/aca/sensor_metadata.csv")
 
         points.forEach(point => {
             if (!isNaN(point.lat) && !isNaN(point.lon)) {
-                L.marker([point.lat, point.lon]).addTo(sensorLayer).bindPopup(point.name);
+                L.marker([point.lat, point.lon], {icon: embassamentIcon}).addTo(sensorLayer).bindPopup(point.name);
             }
         });
 
@@ -65,7 +80,7 @@ fetch("data/processed/aca/sensor_metadata.csv")
 
 var baseLayers = {};
 var overlays = {
-    "Sensor Markers": sensorLayer
+    "Embassament": sensorLayer
 };
 
 L.control.layers(baseLayers, overlays).addTo(map);
