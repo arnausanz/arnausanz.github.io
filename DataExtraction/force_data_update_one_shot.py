@@ -74,10 +74,14 @@ def save_all_meteocat_data_to_csv(data, file_name, path = 'data/processed/meteoc
 
 # TODO: Implement update_all_data function
 """
+CAUTION --> This snippet could exceed the API limit of requests. Use it carefully
+
+
 get_all_meteocat_data(1000, current_year=2008, current_month=12)
 a = concat_all_meteocat_data('1000')
 save_all_meteocat_data_to_csv(transform_all_meteocat_data(a), file_name= 'meteocat_1000_daily_all')
-"""
+
 get_all_meteocat_data(1600, start_year=2004, start_month=6, current_year=2008, current_month=12)
 b = concat_all_meteocat_data('1600')
 save_all_meteocat_data_to_csv(transform_all_meteocat_data(b), file_name= 'meteocat_1600_daily_all')
+"""
