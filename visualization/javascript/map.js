@@ -11,7 +11,7 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
     attribution: '&copy; Arnau Sanz'
 }).addTo(map);
 
-const GeoJson = 'catalonia.geo.json';
+const GeoJson = 'visualization/geojson/catalonia.geo.json';
 
 fetch(GeoJson)
     .then(function(response) {
@@ -21,8 +21,8 @@ fetch(GeoJson)
         // Define el estilo para la capa GeoJSON
         var style = {
             "color": "black",       // Color de la línea del borde
-            "weight": 1.5,          // Grosor de la línea del borde
-            "opacity": 0.25,         // Opacidad de la línea del borde
+            "weight": 1,          // Grosor de la línea del borde
+            "opacity": 0.5,         // Opacidad de la línea del borde
             "fillOpacity": 0      // Opacidad de relleno del polígono (0 para eliminar el relleno)
         };
 
@@ -32,3 +32,40 @@ fetch(GeoJson)
             interactive: false  // Desactiva la interactividad de la capa GeoJSON
         }).addTo(map);
     })
+
+var sensorLayer = L.layerGroup();
+
+fetch("data/processed/aca/sensor_metadata.csv")
+    .then(response => response.text())
+    .then(csvText => {
+        const lines = csvText.split("\n").filter(line => line.trim() !== "");
+        const headers = lines[0].split(",");
+        const points = lines.slice(1).map(line => {
+            const values = line.split(",");
+            const point = {};
+            headers.forEach((header, index) => {
+                point[header.trim()] = values[index].trim();
+            });
+            return {
+                name: point.name,
+                lat: parseFloat(point.latitude),
+                lon: parseFloat(point.longitude)
+            };
+        });
+        console.log(points);
+
+        points.forEach(point => {
+            if (!isNaN(point.lat) && !isNaN(point.lon)) {
+                L.marker([point.lat, point.lon]).addTo(sensorLayer).bindPopup(point.name);
+            }
+        });
+
+        sensorLayer.addTo(map);
+    });
+
+var baseLayers = {};
+var overlays = {
+    "Sensor Markers": sensorLayer
+};
+
+L.control.layers(baseLayers, overlays).addTo(map);
