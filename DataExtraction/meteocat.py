@@ -10,7 +10,13 @@ In the metadata files can be found the variable codes and station codes.
 __HEADERS = {"Content-Type": "application/json", "X-Api-Key": utils.set_meteocat_api_key()}
 __XEMA_BASE_URL = "https://api.meteo.cat/xema/v1/"
 __DAILY_DATA_URL = [__XEMA_BASE_URL + "variables/estadistics/diaris/", "?codiEstacio=", "&any=", "&mes=", "?any=", "&mes="]
-__VARIABLE_FOR_ALL_STATIONS = ["variables/mesurades/{var_code}/{year}/{month}/{day}", "?codiEstacio={station_code}"]
+__MEASURED_DATA_URL = ["variables/mesurades/{var_code}/{year}/{month}/{day}", "?codiEstacio={station_code}"]
+
+_MAP_DAILY_MEASURED_VARS = {
+    'precipitacio': ('1300', '35'),
+    'temperatura': ('1000', '32'),
+    'gruix_neu': ('1600', '38')
+}
 
 def get_daily_data(var_code = None, year = None, month = None, station_code = None, verbose=True) -> pd.DataFrame:
     """
@@ -76,3 +82,5 @@ def join_meteocat_data(existing_data, new_data, overwrite=True):
 # join_meteocat_data(_data_getter("1300"), transform_daily_data(get_daily_data("1300",  "2024", "10")), overwrite=True)
 
 # print(requests.get('https://api.meteo.cat/quotes/v1/consum-actual', headers=__HEADERS).json())
+
+# print(transform_daily_data(get_daily_data("1300",  "2024", "1")))

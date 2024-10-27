@@ -13,7 +13,7 @@ def print_response_info(response):
 
 def set_meteocat_api_key() -> str:
     load_dotenv()
-    return os.getenv("METEOCAT_API_KEY")
+    return os.getenv("METEOCAT_API_KEY_2")
 
 def parse_date(date: str, input_format="%Y-%m-%dZ") -> datetime:
     return datetime.strptime(date, input_format)
