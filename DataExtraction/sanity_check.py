@@ -1,5 +1,7 @@
 import datetime
 
+import pandas as pd
+
 import utils
 """
 This file is aimed to check the sanity of all the process (e.g. the data extraction, the data join, etc.)
@@ -23,3 +25,8 @@ def log_auto_aca_data_update(trigger, msg, log_file = 'logs/aca_data_update.txt'
     with open(utils.get_root_dir() + '/' + log_file, 'a') as f:
         f.write(f"{datetime.datetime.strftime(datetime.datetime.now(), '%d-%m-%Y %H:%M:%S')} - Updated by: {trigger} - {msg}\n")
         f.close()
+
+def save_backup(file, backup_path = 'data/backup/'):
+    utils.save_df_to_csv(pd.read_csv(file), 'backup_' + file.split('/')[-1].split('.')[0] + '_' + datetime.datetime.strftime(datetime.datetime.today(), '%d_%m_%Y'), backup_path)
+
+# save_backup(utils.get_root_dir() + '/' + 'data/processed/aca/aca_daily_all.csv') # --> Save aca_daily_all.csv backup

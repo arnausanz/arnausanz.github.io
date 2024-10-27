@@ -25,18 +25,5 @@ def get_daily_data(var_code = None, year = None, month = None, station_code = No
     data_df = pd.json_normalize(response.json(), record_path=['valors'], meta=['codiEstacio', 'codiVariable'])
     return data_df
 
-"""
-
-DEPRECATED FUNCTION
-
-def get_all_stations_data_per_day_and_var(var_code = None, year = None, month = None, day = None, station_code = None) -> pd.DataFrame:
-    url = __XEMA_BASE_URL + __VARIABLE_FOR_ALL_STATIONS[0].format(var_code=var_code, year=year, month=month, day=day)
-    url += __VARIABLE_FOR_ALL_STATIONS[1].format(station_code=station_code) if station_code is not None else ''
-    response = requests.get(url, headers=__HEADERS)
-    calling_api_message('meteocat_raw', 'Daily data from all stations - Year: ' + year + ' Month: ' + month + ' - Var: ' + var_code)
-    print_response_info(response)
-    data = pd.json_normalize(response.json(), record_path=['variables', 'lectures'], meta=['codi'])
-    return data
-"""
 
 # save_df_to_csv(get_daily_data("1300",  "1989", "02"), "test7")

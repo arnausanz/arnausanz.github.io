@@ -1,8 +1,5 @@
 import os
-from ast import parse
 from datetime import datetime, timedelta
-
-import pandas as pd
 from dotenv import load_dotenv
 
 def calling_api_message(api_name, more_info = None):
