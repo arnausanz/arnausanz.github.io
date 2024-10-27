@@ -58,5 +58,3 @@ def update_today_data_file(variables = ('aca', '1300')):
         df = pd.read_csv(get_root_dir() + '/data/processed/meteocat/meteocat_1300_daily_all.csv')
         df = df[df['data'] == get_date('today')]
         save_df_to_csv(df, 'meteocat_1300_daily_today', 'data/processed/meteocat/')
-
-update_today_data_file()
