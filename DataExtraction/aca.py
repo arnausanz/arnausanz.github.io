@@ -3,7 +3,7 @@ import datetime
 import pandas as pd
 import requests
 
-from DataExtraction import utils, sanity_check
+import utils, sanity_check
 
 """
 This file is used to extract daily data from ACA API.

@@ -5,7 +5,7 @@ from datetime import datetime
 import pandas as pd
 import meteocat
 from tqdm import tqdm
-from DataExtraction import utils
+import utils
 
 _APIs = ['meteocat_raw']
 _METEOCAT_VAR_CODES = [1300]

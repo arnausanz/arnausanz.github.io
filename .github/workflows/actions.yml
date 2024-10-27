@@ -2,7 +2,7 @@ name: run data_extraction
 
 on:
   schedule:
-    - cron: '15 */1 * * *'  # Cada hora a i 15
+    - cron: '*/5 * * * *'  # Cada 5 min
 
 jobs:
   run-script:
