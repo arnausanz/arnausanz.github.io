@@ -3,13 +3,15 @@ import os
 import time
 from datetime import datetime
 import pandas as pd
+import requests
+
 import meteocat
 from tqdm import tqdm
 import utils
 
 _APIs = ['meteocat_raw']
 _METEOCAT_VAR_CODES = [1300]
-_METEOCAT_START_YEAR = 1989
+_METEOCAT_START_YEAR = 2000 # As we only have data from 2000 by ACA
 _METEOCAT_START_MONTH = 1
 
 def update_all_data(api = None):
@@ -38,15 +40,15 @@ def get_all_meteocat_data(var_code = None, start_year = _METEOCAT_START_YEAR, st
                 month = "0" + str(month)
             for var in var_code:
                 data = meteocat.get_daily_data(var, str(year), str(month), verbose=False)
-                meteocat.save_df_to_csv(data, "meteocat_" + str(var) + "_" + str(year) + "_" + str(month), "data/raw/meteocat_raw/")
+                utils.save_df_to_csv(data, "meteocat_" + str(var) + "_" + str(year) + "_" + str(month), "data/raw/meteocat_raw/")
                 progress_bar.update(1)
         time.sleep(delay)
         start_month = 1
 
-def concat_all_meteocat_data(folder_path = 'data/raw/meteocat_raw/1300'):
+def concat_all_meteocat_data(varcode, folder_path = 'data/raw/meteocat_raw/'):
     previous_dir = os.getcwd()
     root_dir = utils.get_root_dir()
-    os.chdir(root_dir + "/" + folder_path)
+    os.chdir(root_dir + "/" + folder_path + varcode)
     files = os.listdir()
     df = pd.DataFrame()
     for f in files:
@@ -68,10 +70,11 @@ def transform_all_meteocat_data(data):
 
 
 def save_all_meteocat_data_to_csv(data, file_name, path = 'data/processed/meteocat/'):
-    meteocat.save_df_to_csv(data, file_name, path = path)
+    utils.save_df_to_csv(data, file_name, path = path)
 
 # TODO: Implement update_all_data function
-a = concat_all_meteocat_data()
-print(a.head())
-print(a.shape)
-save_all_meteocat_data_to_csv(transform_all_meteocat_data(a), 'meteocat_1300_daily_all')
+# get_all_meteocat_data(1300)
+# a = concat_all_meteocat_data('1300')
+# print(a.head())
+# print(a.shape)
+# save_all_meteocat_data_to_csv(transform_all_meteocat_data(a), path='data/raw/meteocat', file_name= 'meteocat_1300_daily_all')
