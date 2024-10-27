@@ -2,7 +2,7 @@ name: run data_extraction
 
 on:
   schedule:
-    - cron: '0 0 1 1 *'  # Execució l'1 de gener
+    - cron: '0 */2 * * *'  # Execució l'1 de gener
 
 jobs:
   run-script:
