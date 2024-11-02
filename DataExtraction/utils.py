@@ -23,12 +23,6 @@ def save_df_to_csv(df, file_name, path = 'data/raw', header = True) -> None:
     _path = os.path.join(project_dir, path)
     df.to_csv(_path + file_name + '.csv', index=False, header=header)
 
-def save_df_to_json(data, file_name, path = 'data/raw') -> None:
-    project_dir = get_root_dir()
-    _path = os.path.join(project_dir, path)
-    with open(_path + file_name + '.json', 'w') as f:
-        f.write(str(data))
-
 def check_str_int(value):
     if isinstance(value, int):
         return str(value)
