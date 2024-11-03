@@ -5,3 +5,5 @@ tqdm~=4.66.5
 keras~=3.6.0
 numpy~=2.0.0
 tkan~=0.4.3
+rasterio~=1.4.2
+pyproj~=3.7.0
