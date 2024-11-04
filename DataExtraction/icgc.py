@@ -1,7 +1,7 @@
 from idlelib.pyparse import trans
 
 import rasterio.plot
-from pyproj import Transformer
+# from pyproj import Transformer
 import utils
 
 # Dictionary with the different types of soil
@@ -55,7 +55,7 @@ tiff = rasterio.open(data_name)
 print(tiff.crs)
 
 # Define the transformer to convert from latitude and longitude to UTM coordinates
-transformer = Transformer.from_crs("EPSG:4326", "EPSG:25831", always_xy=True)
+# transformer = Transformer.from_crs("EPSG:4326", "EPSG:25831", always_xy=True)
 
 def convert_lat_lon_to_utm(lat, lon):
     """
@@ -64,8 +64,9 @@ def convert_lat_lon_to_utm(lat, lon):
     :param lon: Longitude
     :return: UTM coordinates
     """
-    x, y = transformer.transform(lat, lon)
-    return x, y
+    # x, y = transformer.transform(lat, lon)
+    # return x, y
+    pass
 
 print(convert_lat_lon_to_utm(2.154007, 41.390205))
 
