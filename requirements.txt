@@ -1,4 +1,8 @@
+keras~=3.6.0
+numpy~=2.0.0
+tkan~=0.4.3
 pandas~=2.2.3
 requests~=2.32.3
+rasterio~=1.4.2
+pyproj~=3.6.1
 python-dotenv~=1.0.1
-numpy~=2.0.0
