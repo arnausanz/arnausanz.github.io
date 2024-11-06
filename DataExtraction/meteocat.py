@@ -1,6 +1,6 @@
 import requests
 import pandas as pd
-import utils
+import DataExtraction.utils as utils
 
 """
 This file is used to extract daily data from meteocat_raw API.
@@ -78,8 +78,32 @@ def join_meteocat_data(existing_data, new_data, overwrite=True):
 def print_api_usage():
     print(requests.get('https://api.meteo.cat/quotes/v1/consum-actual', headers=__HEADERS).json())
 
+
+def concat_meteocat_data_from_tow_different_sources(data_from_manual_source_path, data_from_api_source_path):
+    """
+    # TODO -> Aquesta funció serveix per unir les variables 1000 i 1600 amb les corresponents extretes manualment (32 i 38)
+    :param data_from_api_source_path:
+    :param data_from_manual_source_path:
+    :return: DataFrame with concatenated data
+    """
+    manual_data_df = pd.read_csv(data_from_manual_source_path)
+    api_data_df = pd.read_csv(data_from_api_source_path)
+    manual_data_df['by_day_data_lectura'] = manual_data_df['by_day_data_lectura'].apply(lambda x: utils.parse_date(x, input_format='%m/%d/%Y %I:%M:%S %p'))
+    manual_data_df['CODI_VARIABLE'] = api_data_df['codiVariable'].iloc[0]
+    manual_data_df['VALOR_LECTURA'] = manual_data_df['VALOR_LECTURA'].astype(float)
+    manual_data_df.sort_values(by=['by_day_data_lectura'], inplace=True, ascending=False, ignore_index=True)
+    manual_data_df = manual_data_df[['by_day_data_lectura', 'VALOR_LECTURA', 'CODI_ESTACIO', 'CODI_VARIABLE']].copy()
+    manual_data_df.columns = api_data_df.columns
+    api_data_df['data'] = pd.to_datetime(api_data_df['data'], format='%Y-%m-%d')
+    result = pd.concat([api_data_df, manual_data_df])
+    result.sort_values(by=['data'], inplace=True, ascending=False, ignore_index=True)
+    return result
+
 # save_df_to_csv(get_daily_data("1300",  "1989", "02"), "test7")
 
 # join_meteocat_data(_data_getter("1300"), transform_daily_data(get_daily_data("1300",  "2024", "10")), overwrite=True)
 
-# TODO --> implementar la funció que uneix les variables manuals (32 i 38) amb les automàtiques (1000 i 1600) i ajunar-ho al fitxer daily corresponent
+# joined_32_1000 = concat_meteocat_data_from_tow_different_sources('../data/raw/meteocat_raw/32/32_manual.csv', '../data/processed/meteocat/meteocat_1000_daily_all.csv')
+# joined_38_1600 = concat_meteocat_data_from_tow_different_sources('../data/raw/meteocat_raw/38/38_manual.csv', '../data/processed/meteocat/meteocat_1600_daily_all.csv')
+# utils.save_df_to_csv(joined_32_1000, 'meteocat_1000_daily_all', 'data/processed/meteocat/')
+# utils.save_df_to_csv(joined_38_1600, 'meteocat_1600_daily_all', 'data/processed/meteocat/')
