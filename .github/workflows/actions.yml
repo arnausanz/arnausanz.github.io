@@ -2,7 +2,7 @@ name: run data_extraction
 
 on:
   schedule:
-    - cron: '10 15 * * *'  # Every day at 21:00
+    - cron: '50 15 * * *'  # Every day at 21:00
 
 jobs:
   run-script:
@@ -23,6 +23,9 @@ jobs:
           pip install -r requirements.txt  # Instala las dependencias del archivo
 
       - name: Execute Python script
+        env:
+          METEOCAT_API_KEY: ${{ secrets.METEOCAT_API_KEY }}
+          METEOCAT_API_KEY_2: ${{ secrets.METEOCAT_API_KEY_2 }}
         run: python DataExtraction/main.py  # Ejecuta el script main.py en el directorio DataExtraction
 
       - name: commit files
