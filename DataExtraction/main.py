@@ -1,5 +1,18 @@
 # This document will be the main script for data extraction (automatically).
+from datetime import datetime
+
 import aca
+import meteocat as m
 
 # Update data from ACA
 aca.join_daily_data_with_all_data(aca.transform_daily_data(aca.get_daily_data()), overwrite=True, log_trigger='Automatic')
+print('ACA data updated successfully')
+
+# Update data from Meteocat
+meteocat_vars = ["1300", "1000", "1600"]
+current_month = datetime.now().month - 1 if datetime.now().day == 1 else datetime.now().month
+current_year = datetime.now().year
+for var in meteocat_vars:
+    m.log_meteocat_data(var, current_year, current_month, trigger="Automatic")
+    m.join_meteocat_data(m.data_getter(var) ,m.transform_daily_data(m.get_daily_data(var, current_year, current_month)), overwrite=True)
+    print(f'Meteocat data for variable {var} updated successfully')

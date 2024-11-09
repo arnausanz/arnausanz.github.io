@@ -1,6 +1,6 @@
 import requests
 import pandas as pd
-import DataExtraction.utils as utils
+import utils, sanity_check
 
 """
 This file is used to extract daily data from meteocat_raw API.
@@ -50,7 +50,7 @@ def transform_daily_data(data: pd.DataFrame) -> pd.DataFrame:
     data['data'] = data['data'].apply(utils.parse_date)
     return data
 
-def _data_getter(var_name):
+def data_getter(var_name):
     """
     Function to retrieve already stored data
     :param var_name: Name of the variable
@@ -74,12 +74,14 @@ def join_meteocat_data(existing_data, new_data, overwrite=True):
     df.drop_duplicates(inplace=True)
     if overwrite:
         utils.save_df_to_csv(df, f"meteocat_{new_data['codiVariable'].iloc[0]}_daily_all", path="data/processed/meteocat/")
+    else:
+        return df
 
 def print_api_usage():
     print(requests.get('https://api.meteo.cat/quotes/v1/consum-actual', headers=__HEADERS).json())
 
 
-def concat_meteocat_data_from_tow_different_sources(data_from_manual_source_path, data_from_api_source_path):
+def concat_meteocat_data_from_two_different_sources(data_from_manual_source_path, data_from_api_source_path):
     """
     # TODO -> Aquesta funció serveix per unir les variables 1000 i 1600 amb les corresponents extretes manualment (32 i 38)
     :param data_from_api_source_path:
@@ -99,9 +101,13 @@ def concat_meteocat_data_from_tow_different_sources(data_from_manual_source_path
     result.sort_values(by=['data'], inplace=True, ascending=False, ignore_index=True)
     return result
 
+def log_meteocat_data(var_name, year, month, trigger = "Manual"):
+    sanity_check.log_auto_meteocat_data_update(trigger, f"Var: {var_name} - Year: {year} - Month: {month}")
+
+
 # save_df_to_csv(get_daily_data("1300",  "1989", "02"), "test7")
 
-# join_meteocat_data(_data_getter("1300"), transform_daily_data(get_daily_data("1300",  "2024", "10")), overwrite=True)
+# join_meteocat_data(data_getter("1300"), transform_daily_data(get_daily_data("1300",  "2024", "10")), overwrite=True)
 
 # joined_32_1000 = concat_meteocat_data_from_tow_different_sources('../data/raw/meteocat_raw/32/32_manual.csv', '../data/processed/meteocat/meteocat_1000_daily_all.csv')
 # joined_38_1600 = concat_meteocat_data_from_tow_different_sources('../data/raw/meteocat_raw/38/38_manual.csv', '../data/processed/meteocat/meteocat_1600_daily_all.csv')

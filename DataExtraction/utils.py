@@ -24,6 +24,7 @@ def save_df_to_csv(df, file_name, path = 'data/raw', header = True) -> None:
     df.to_csv(_path + file_name + '.csv', index=False, header=header)
 
 def check_str_int(value):
+    print(value)
     if isinstance(value, int):
         return str(value)
     elif isinstance(value, str):

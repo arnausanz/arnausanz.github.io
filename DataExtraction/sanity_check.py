@@ -15,3 +15,8 @@ def log_auto_aca_data_update(trigger, msg, log_file = 'logs/aca_data_update.txt'
     with open(utils.get_root_dir() + '/' + log_file, 'a') as f:
         f.write(f"{datetime.datetime.strftime(datetime.datetime.now(), '%d-%m-%Y %H:%M:%S')} - Updated by: {trigger} - {msg}\n")
         f.close()
+
+def log_auto_meteocat_data_update(trigger, msg, log_file = 'logs/meteocat_data_update.txt'):
+    with open(utils.get_root_dir() + '/' + log_file, 'a') as f:
+        f.write(f"{datetime.datetime.strftime(datetime.datetime.now(), '%d-%m-%Y %H:%M:%S')} - Updated by: {trigger} - {msg}\n")
+        f.close()
