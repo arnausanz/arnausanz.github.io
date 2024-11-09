@@ -1,6 +1,5 @@
 # This document will be the main script for data extraction (automatically).
 from datetime import datetime
-
 import aca
 import meteocat as m
 

@@ -3,10 +3,7 @@ import os
 import time
 from datetime import datetime
 import pandas as pd
-import requests
-
 import meteocat
-from tqdm import tqdm
 import utils
 
 _APIs = ['meteocat_raw']
@@ -27,9 +24,6 @@ def get_all_meteocat_data(var_code = None, start_year = _METEOCAT_START_YEAR, st
         raise ValueError("Variable code not valid")
     var_code = _METEOCAT_VAR_CODES if var_code is None else [var_code]
 
-    total_months = (current_year - start_year) * 12 + (current_month - start_month + 1)
-    progress_bar = tqdm(total=total_months * len(var_code), desc="Progress", unit="month")
-
     for year in range(start_year, current_year + 1):
         for month in range(start_month, 13):
             if year == current_year and month > current_month:
@@ -39,7 +33,6 @@ def get_all_meteocat_data(var_code = None, start_year = _METEOCAT_START_YEAR, st
             for var in var_code:
                 data = meteocat.get_daily_data(var, str(year), str(month), verbose=False)
                 utils.save_df_to_csv(data, "meteocat_" + str(var) + "_" + str(year) + "_" + str(month), "data/raw/meteocat_raw/"+str(var)+"/")
-                progress_bar.update(1)
         time.sleep(delay)
         start_month = 1
 
