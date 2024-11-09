@@ -2,7 +2,7 @@ name: run data_extraction
 
 on:
   schedule:
-    - cron: '0 21 * * *'  # Every day at 21:00
+    - cron: '10 15 * * *'  # Every day at 21:00
 
 jobs:
   run-script:

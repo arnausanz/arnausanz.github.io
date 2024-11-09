@@ -47,18 +47,22 @@ def get_date(date_str):
 def update_today_data_file(variables = ('aca', '1300', '1000', '1600')):
     if 'aca' in variables:
         df = pd.read_csv(get_root_dir() + '/data/processed/aca/aca_daily_all.csv')
+        df['date'] = pd.to_datetime(df['date'], format='%Y-%m-%d')
         df = df[df['date'] == get_date('today')]
         save_df_to_csv(df, 'aca_daily_today', 'data/processed/aca/')
     if '1300' in variables:
         df = pd.read_csv(get_root_dir() + '/data/processed/meteocat/meteocat_1300_daily_all.csv')
+        df['data'] = pd.to_datetime(df['data'], format='%Y-%m-%d')
         df = df[df['data'] == get_date('today')]
         save_df_to_csv(df, 'meteocat_1300_daily_today', 'data/processed/meteocat/')
     if '1000' in variables:
         df = pd.read_csv(get_root_dir() + '/data/processed/meteocat/meteocat_1000_daily_all.csv')
+        df['data'] = pd.to_datetime(df['data'], format='%Y-%m-%d')
         df = df[df['data'] == get_date('today')]
         save_df_to_csv(df, 'meteocat_1000_daily_today', 'data/processed/meteocat/')
     if '1600' in variables:
         df = pd.read_csv(get_root_dir() + '/data/processed/meteocat/meteocat_1600_daily_all.csv')
+        df['data'] = pd.to_datetime(df['data'], format='%Y-%m-%d')
         df = df[df['data'] == get_date('today')]
         save_df_to_csv(df, 'meteocat_1600_daily_today', 'data/processed/meteocat/')
 
