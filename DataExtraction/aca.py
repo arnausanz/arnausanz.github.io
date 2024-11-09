@@ -1,8 +1,6 @@
 import datetime
-
 import pandas as pd
 import requests
-
 import utils, sanity_check
 
 """

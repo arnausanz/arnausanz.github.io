@@ -1,7 +1,4 @@
 import datetime
-
-import pandas as pd
-
 import utils
 """
 This file is aimed to check the sanity of all the process (e.g. the data extraction, the data join, etc.)
