@@ -6,6 +6,8 @@ import pandas as pd
 import meteocat
 import utils
 
+# TODO --> Delete this file (?)
+
 _APIs = ['meteocat_raw']
 _METEOCAT_VAR_CODES = [1300, 1000, 1600]
 _METEOCAT_START_YEAR = 2000 # As we only have data from 2000 by ACA
