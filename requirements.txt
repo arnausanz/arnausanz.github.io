@@ -7,3 +7,5 @@ rasterio~=1.4.2
 pyproj~=3.6.1
 python-dotenv~=1.0.1
 tensorflow~=2.18.0
+torch~=2.5.1
+xlstm~=1.0.8
