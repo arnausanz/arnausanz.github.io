@@ -1,8 +1,8 @@
-from idlelib.pyparse import trans
-
+import pandas as pd
 import rasterio.plot
 # from pyproj import Transformer
 import utils
+from rasterio.warp import transform
 
 # Dictionary with the different types of soil
 SOIL_TYPE = {
@@ -50,9 +50,50 @@ SOIL_TYPE = {
     0: "Sense dades"
 }
 
-data_name = utils.get_root_dir() + "/data/raw/icgc/cobertes-sol-2022.tif"
-tiff = rasterio.open(data_name)
-print(tiff.crs)
+input_file = utils.get_root_dir() + '/data/raw/icgc/cobertes-sol-2022.tif'
+output_file = utils.get_root_dir() + '/data/processed/icgc/cobertes-sol.csv'
+
+# Open the TIFF image
+with rasterio.open(input_file) as dataset:
+    # Read the image data
+    data = dataset.read(1)  # Read the first band (assuming single-band image)
+
+    # Prepare to store results
+    pixel_classes = []
+
+    # Get the transform information (affine transformation for pixel-to-coordinate mapping)
+    transform_affine = dataset.transform
+    src_crs = dataset.crs  # Get the original CRS of the dataset
+
+    # Define the target CRS for latitude and longitude (WGS84)
+    dst_crs = 'EPSG:4326'
+
+    # Loop over each pixel in the image
+    for row in range(data.shape[0]):
+        for col in range(data.shape[1]):
+            # Get the pixel value (class) at this location
+            class_value = data[row, col]
+
+            # Convert pixel coordinates to the source spatial coordinates
+            x_src, y_src = rasterio.transform.xy(transform_affine, row, col, offset='center')
+
+            # Reproject coordinates to latitude and longitude if necessary
+            if src_crs != dst_crs:
+                x_lon, y_lat = transform(src_crs, dst_crs, [x_src], [y_src])
+                x_lon, y_lat = x_lon[0], y_lat[0]  # Unpack from lists
+            else:
+                x_lon, y_lat = x_src, y_src
+            #print("latitude ", x_lon, " longitude ", y_lat)
+            # Append the latitude, longitude, and class to the list
+            #pixel_classes.append((x_lon, y_lat, class_value))
+            pixel_classes.append((y_lat, x_lon, class_value))
+        if row == 10:
+            break
+
+# Example: print first 10 pixels
+print(pixel_classes[:10])
+df = pd.DataFrame(pixel_classes, columns=['Latitude', 'Longitude', 'Class'])
+df.to_csv(output_file, index=False)
 
 # Define the transformer to convert from latitude and longitude to UTM coordinates
 # transformer = Transformer.from_crs("EPSG:4326", "EPSG:25831", always_xy=True)
@@ -69,13 +110,3 @@ def convert_lat_lon_to_utm(lat, lon):
     pass
 
 print(convert_lat_lon_to_utm(2.154007, 41.390205))
-
-# TODO --> Aplicar bé aquesta funció
-with rasterio.open(data_name) as dataset:
-    # Defineix la coordenada (longitud, latitud) on vols consultar el valor
-    coordenada = [(convert_lat_lon_to_utm(2.154007, 41.390205))]  # Les coordenades es passen com una llista de tuples
-
-    # Usa `sample` per obtenir el valor en aquesta coordenada
-    valor_sol = list(dataset.sample(coordenada))[0][0]
-
-    print(f"El tipus de sòl a la coordenada {coordenada[0]} és {SOIL_TYPE[valor_sol]}")
