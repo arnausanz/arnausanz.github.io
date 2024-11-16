@@ -25,13 +25,15 @@ def icgc_data():
     return data
 
 def read_metadata():
-    meteocat_stations_metadata = pd.read_csv(utils.get_root_dir() + 'data/processed/meteocat/stations_metadata.csv')
-    aca_sensors_metadata = pd.read_csv(utils.get_root_dir() + 'data/processed/aca/sensors_metadata.csv')
-    meteocat_stations_metadata['coordenades.latitud'] = meteocat_stations_metadata['coordenades.latitud'].astype(np.float64)
-    meteocat_stations_metadata['coordenades.longitud'] = meteocat_stations_metadata['coordenades.longitud'].astype(np.float64)
-    aca_sensors_metadata['latitude'] = aca_sensors_metadata['latitude'].astype(np.float64)
-    aca_sensors_metadata['longitude'] = aca_sensors_metadata['longitude'].astype(np.float64)
-    return aca_sensors_metadata, meteocat_stations_metadata
+    _meteocat_stations_metadata = pd.read_csv(utils.get_root_dir() + '/data/processed/meteocat/stations_metadata.csv')
+    _aca_sensors_metadata = pd.read_csv(utils.get_root_dir() + '/data/processed/aca/sensor_metadata.csv')
+    _meteocat_stations_metadata['coordenades.latitud'] = _meteocat_stations_metadata['coordenades.latitud'].astype(np.float64)
+    _meteocat_stations_metadata['coordenades.longitud'] = _meteocat_stations_metadata['coordenades.longitud'].astype(np.float64)
+    _aca_sensors_metadata['latitude'] = _aca_sensors_metadata['latitude'].astype(np.float64)
+    _aca_sensors_metadata['longitude'] = _aca_sensors_metadata['longitude'].astype(np.float64)
+    _aca_sensors_metadata = _aca_sensors_metadata[['name', 'latitude', 'longitude']].copy()
+    _aca_sensors_metadata.drop_duplicates(inplace=True)
+    return _aca_sensors_metadata, _meteocat_stations_metadata
 
 meteocat_data_1000 = meteocat_data('1000')
 meteocat_data_1300 = meteocat_data('1300')
@@ -48,9 +50,9 @@ def calc_distances():
     for _, aca_sensor in aca_sensors_metadata.iterrows():
         for _, meteocat_station in meteocat_stations_metadata.iterrows():
             distance = geodesic((aca_sensor['latitude'], aca_sensor['longitude']), (meteocat_station['coordenades.latitud'], meteocat_station['coordenades.longitud'])).km
-            distances.append((aca_sensor['codiEstacio'], meteocat_station['codi'], distance))
+            distances.append((aca_sensor['name'], meteocat_station['codi'], distance))
 
     return pd.DataFrame(distances, columns=['aca_sensor', 'meteocat_station', 'distance'])
 
 
-print(calc_distances())
+# utils.save_df_to_csv(calc_distances(), 'distances_and_soil_types', utils.get_root_dir() + '/model/data_prepared/')
