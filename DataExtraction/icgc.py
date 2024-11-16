@@ -69,7 +69,7 @@ with rasterio.open(input_file) as dataset:
 
     # Calculate the stride size to sample approximately 1% of the pixels
     total_pixels = dataset.width * dataset.height
-    target_sample_size = math.ceil(total_pixels * 0.0001)  # 0.01% of the total pixels
+    target_sample_size = math.ceil(total_pixels * 0.000005)  # 0.0005% of the total pixels
     stride = int(math.sqrt(total_pixels / target_sample_size))
 
     print(f"Total Pixels: {total_pixels}, Target Sample Size: {target_sample_size}, Stride: {stride}")
