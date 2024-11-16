@@ -1,8 +1,10 @@
 import pandas as pd
 import rasterio.plot
-# from pyproj import Transformer
+from rasterio.windows import Window
+from pyproj import Transformer
 import utils
-from rasterio.warp import transform
+from tqdm import tqdm
+import math
 
 # Dictionary with the different types of soil
 SOIL_TYPE = {
@@ -53,42 +55,58 @@ SOIL_TYPE = {
 input_file = utils.get_root_dir() + '/data/raw/icgc/cobertes-sol-2022.tif'
 output_file = utils.get_root_dir() + '/data/processed/icgc/cobertes-sol.csv'
 
+
+dst_crs = 'EPSG:4326'
 # Open the TIFF image
 with rasterio.open(input_file) as dataset:
-    # Read the image data
-    data = dataset.read(1)  # Read the first band (assuming single-band image)
+    # Get the transform information (affine transformation for pixel-to-coordinate mapping)
+    transform_affine = dataset.transform
+    src_crs = dataset.crs  # Get the original CRS of the dataset
+    transformer = Transformer.from_crs(src_crs, dst_crs, always_xy=True)
 
     # Prepare to store results
     pixel_classes = []
 
-    # Get the transform information (affine transformation for pixel-to-coordinate mapping)
-    transform_affine = dataset.transform
-    src_crs = dataset.crs  # Get the original CRS of the dataset
+    # Calculate the stride size to sample approximately 1% of the pixels
+    total_pixels = dataset.width * dataset.height
+    target_sample_size = math.ceil(total_pixels * 0.0001)  # 0.01% of the total pixels
+    stride = int(math.sqrt(total_pixels / target_sample_size))
 
-    # Define the target CRS for latitude and longitude (WGS84)
-    dst_crs = 'EPSG:4326'
+    print(f"Total Pixels: {total_pixels}, Target Sample Size: {target_sample_size}, Stride: {stride}")
 
-    # Loop over each pixel in the image
-    for row in range(data.shape[0]):
-        for col in range(data.shape[1]):
-            # Get the pixel value (class) at this location
-            class_value = data[row, col]
+    # Use a progress bar
+    num_rows = dataset.height // stride
+    num_cols = dataset.width // stride
+    total_samples = num_rows * num_cols
 
-            # Convert pixel coordinates to the source spatial coordinates
-            x_src, y_src = rasterio.transform.xy(transform_affine, row, col, offset='center')
+    with tqdm(total=total_samples, desc="Processing sampled pixels") as pbar:
+        for i in range(0, dataset.height, stride):
+            for j in range(0, dataset.width, stride):
+                # Read only a single pixel at (i, j)
+                window = Window(j, i, 1, 1)
+                data = dataset.read(1, window=window)  # Read the first band for this pixel
+                transform_affine_chunk = dataset.window_transform(window)
 
-            # Reproject coordinates to latitude and longitude if necessary
-            if src_crs != dst_crs:
-                x_lon, y_lat = transform(src_crs, dst_crs, [x_src], [y_src])
-                x_lon, y_lat = x_lon[0], y_lat[0]  # Unpack from lists
-            else:
-                x_lon, y_lat = x_src, y_src
-            #print("latitude ", x_lon, " longitude ", y_lat)
-            # Append the latitude, longitude, and class to the list
-            #pixel_classes.append((x_lon, y_lat, class_value))
-            pixel_classes.append((y_lat, x_lon, class_value))
-        if row == 10:
-            break
+                # Get the pixel value (class) at this location
+                class_value = data[0, 0]
+
+                # Convert pixel coordinates to the source spatial coordinates
+                x_src, y_src = rasterio.transform.xy(
+                    transform_affine_chunk, 0, 0, offset='center'
+                )
+
+                # Reproject coordinates to latitude and longitude
+                x_lon, y_lat = transformer.transform(x_src, y_src)
+
+                # Append the latitude, longitude, and class to the list
+                pixel_classes.append((y_lat, x_lon, class_value))
+
+                # Update the progress bar
+                pbar.update(1)
+
+# Now, pixel_classes contains 1% of the sampled pixels across the raster
+
+# Now, pixel_classes contains all the data you processed
 
 # Example: print first 10 pixels
 print(pixel_classes[:10])
