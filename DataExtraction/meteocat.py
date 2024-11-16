@@ -102,13 +102,12 @@ def concat_meteocat_data_from_two_different_sources(data_from_manual_source_path
     result.sort_values(by=['data'], inplace=True, ascending=False, ignore_index=True)
     return result
 
-def log_auto_meteocat_data_update(trigger, msg, log_file = 'logs/meteocat_data_update.txt'):
+def log_meteocat_data(var_name, year, month, trigger = "Manual"):
+    log_file = 'logs/meteocat_data_update.txt'
+    msg = f"Var: {var_name} - Year: {year} - Month: {month}"
     with open(utils.get_root_dir() + '/' + log_file, 'a') as f:
         f.write(f"{datetime.datetime.strftime(datetime.datetime.now(), '%d-%m-%Y %H:%M:%S')} - Updated by: {trigger} - {msg}\n")
         f.close()
-
-def log_meteocat_data(var_name, year, month, trigger = "Manual"):
-    log_auto_meteocat_data_update(trigger, f"Var: {var_name} - Year: {year} - Month: {month}")
 
 
 # save_df_to_csv(get_daily_data("1300",  "1989", "02"), "test7")
