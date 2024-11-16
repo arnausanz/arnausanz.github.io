@@ -15,9 +15,6 @@ _var_code_paths = {
     'icgc': utils.get_root_dir() + '/data/processed/icgc/cobertes_sol.csv'
 }
 
-# As the dataframes are very big, for now, we are using only a fraction of them (always the same dates, strating with the oldest data)
-max_date = '2024-01-01'
-
 def meteocat_data(var_code):
     data = pd.read_csv(_var_code_paths[var_code])
     data['data'] = pd.to_datetime(data['data'], format='%Y-%m-%d')
@@ -26,13 +23,13 @@ def meteocat_data(var_code):
     # Keep only actual working stations from meteocat/stations_metadata.csv
     stations_metadata = pd.read_csv(utils.get_root_dir() + '/data/processed/meteocat/stations_metadata.csv')
     data = data[data['codiEstacio'].isin(stations_metadata['codi'])]
-    return data[data['data'] <= max_date]
+    return data
 
 def aca_data():
     data = pd.read_csv(_var_code_paths['aca'])
     data['date'] = pd.to_datetime(data['date'], format='%Y-%m-%d')
     data.sort_values(by='date', inplace=True)
-    return data[data['date'] <= max_date]
+    return data
 
 def icgc_data():
     data = pd.read_csv(_var_code_paths['icgc'])
@@ -139,7 +136,11 @@ def transform_meteocat_dataframes(dataframe, var):
     :return: DataFrame transformed
     """
     # Pivot the dataframe
-    df = dataframe.pivot(index='data', columns='codiEstacio', values='valor')
+    try:
+        df = dataframe.pivot(index='data', columns='codiEstacio', values='valor')
+    except:
+        # Print for the date 2024-10-01 the values of station X4
+        print(dataframe[(dataframe['data'] == '2024-10-01') & (dataframe['codiEstacio'] == 'X4')])
     # Rename the columns
     df.columns = [f"{col}_{var}" for col in df.columns]
     # Ensure the index is set to the date
@@ -166,5 +167,4 @@ def merge_all_meteocat_data(_meteocat_data_1000=meteocat_data_1000, _meteocat_da
 # utils.save_df_to_csv(get_soil_information_between_points(), 'soil_information', utils.get_root_dir() + '/model/data_prepared/')
 
 # Merge all meteocat data
-a = merge_all_meteocat_data()
 utils.save_df_to_csv(merge_all_meteocat_data(), 'meteocat_merged', utils.get_root_dir() + '/model/data_prepared/')
