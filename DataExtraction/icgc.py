@@ -53,7 +53,7 @@ SOIL_TYPE = {
 }
 
 input_file = utils.get_root_dir() + '/data/raw/icgc/cobertes-sol-2022.tif'
-output_file = utils.get_root_dir() + '/data/processed/icgc/cobertes-sol.csv'
+output_file = utils.get_root_dir() + '/data/processed/icgc/cobertes_sol.csv'
 
 
 dst_crs = 'EPSG:4326'

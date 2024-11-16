@@ -1,3 +1,5 @@
+import ast
+import numpy as np
 import requests
 import pandas as pd
 import utils
@@ -109,6 +111,20 @@ def log_meteocat_data(var_name, year, month, trigger = "Manual"):
         f.write(f"{datetime.datetime.strftime(datetime.datetime.now(), '%d-%m-%Y %H:%M:%S')} - Updated by: {trigger} - {msg}\n")
         f.close()
 
+def get_stations_metadata():
+    """
+    Function to get the metadata with coordinates of the stations (only the active ones)
+    :return:
+    """
+    path = utils.get_root_dir() + '/DataExtraction/metadata/meteocat_metadata/stations_metadata.csv'
+    data = pd.read_csv(path)
+    data['estats'] = data['estats'].apply(lambda x: ast.literal_eval(x))
+    data['estats'] = data['estats'].apply(lambda x: x if len(x) == 1 else np.nan)
+    data.dropna(subset=['estats'], inplace=True)
+    data[['codi', 'altitud', 'coordenades.latitud', 'coordenades.longitud']].to_csv(utils.get_root_dir() + '/data/processed/meteocat/stations_metadata.csv', index=False)
+
+
+# get_stations_metadata()
 
 # save_df_to_csv(get_daily_data("1300",  "1989", "02"), "test7")
 
