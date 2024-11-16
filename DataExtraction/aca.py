@@ -1,7 +1,7 @@
 import datetime
 import pandas as pd
 import requests
-import utils, sanity_check
+import utils
 
 """
 This file is used to extract daily data from ACA API.
@@ -27,6 +27,11 @@ _NAME_MATCHING_DICT = {
     'Sant Ponç (Clariana de Cardener)': 'Embassament de Sant Ponç (Clariana de Cardener)',
     'Susqueda (Osor)': 'Embassament de Susqueda (Osor)'
 }
+
+def log_auto_aca_data_update(trigger, msg, log_file = 'logs/aca_data_update.txt'):
+    with open(utils.get_root_dir() + '/' + log_file, 'a') as f:
+        f.write(f"{datetime.datetime.strftime(datetime.datetime.now(), '%d-%m-%Y %H:%M:%S')} - Updated by: {trigger} - {msg}\n")
+        f.close()
 
 def get_all_sensor_codes(sensor_data_file = 'data/processed/aca/sensor_metadata.csv') -> list:
     """
@@ -139,7 +144,7 @@ def join_daily_data_with_all_data(daily_data_df, all_data_df=_get_all_data(), ov
         return data_updated
     # Log the update
     log_msg = "Data updated with daily data from " + datetime.datetime.strftime(daily_data_df['date'].min(), '%d/%m/%Y') + " to " + datetime.datetime.strftime(daily_data_df['date'].max(), '%d/%m/%Y') + " -  Embassaments: " + str(';'.join(daily_data_df['name'].unique()))
-    sanity_check.log_auto_aca_data_update(trigger=log_trigger, msg=log_msg)
+    log_auto_aca_data_update(trigger=log_trigger, msg=log_msg)
 
 def get_catalog(catalog_type="embassament"):
     """

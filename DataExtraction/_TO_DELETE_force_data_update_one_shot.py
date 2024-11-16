@@ -1,3 +1,6 @@
+"""
+# TODO --> Delete this file (?)
+
 # This document will be used to extract and update all the data from the different APIs. It will be called manually when needed.
 import os
 import time
@@ -6,7 +9,6 @@ import pandas as pd
 import meteocat
 import utils
 
-# TODO --> Delete this file (?)
 
 _APIs = ['meteocat_raw']
 _METEOCAT_VAR_CODES = [1300, 1000, 1600]
@@ -67,8 +69,7 @@ def save_all_meteocat_data_to_csv(data, file_name, path = 'data/processed/meteoc
 
 
 
-# TODO: Implement update_all_data function
-"""
+# _TODO: Implement update_all_data function
 CAUTION --> This snippet could exceed the API limit of requests. Use it carefully
 
 
@@ -79,4 +80,6 @@ save_all_meteocat_data_to_csv(transform_all_meteocat_data(a), file_name= 'meteoc
 get_all_meteocat_data(1600, start_year=2004, start_month=6, current_year=2008, current_month=12)
 b = concat_all_meteocat_data('1600')
 save_all_meteocat_data_to_csv(transform_all_meteocat_data(b), file_name= 'meteocat_1600_daily_all')
+
+
 """
