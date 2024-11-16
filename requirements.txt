@@ -9,3 +9,5 @@ python-dotenv~=1.0.1
 tensorflow~=2.18.0
 torch~=2.5.1
 xlstm~=1.0.8
+geopy~=2.4.1
+tqdm~=4.67.0
