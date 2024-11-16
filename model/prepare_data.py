@@ -15,15 +15,24 @@ _var_code_paths = {
     'icgc': utils.get_root_dir() + '/data/processed/icgc/cobertes_sol.csv'
 }
 
+# As the dataframes are very big, for now, we are using only a fraction of them (always the same dates, strating with the oldest data)
+max_date = '2024-01-01'
+
 def meteocat_data(var_code):
     data = pd.read_csv(_var_code_paths[var_code])
     data['data'] = pd.to_datetime(data['data'], format='%Y-%m-%d')
-    return data
+    data.sort_values(by='data', inplace=True)
+    data.drop(columns=['codiVariable'], inplace=True)
+    # Keep only actual working stations from meteocat/stations_metadata.csv
+    stations_metadata = pd.read_csv(utils.get_root_dir() + '/data/processed/meteocat/stations_metadata.csv')
+    data = data[data['codiEstacio'].isin(stations_metadata['codi'])]
+    return data[data['data'] <= max_date]
 
 def aca_data():
     data = pd.read_csv(_var_code_paths['aca'])
     data['date'] = pd.to_datetime(data['date'], format='%Y-%m-%d')
-    return data
+    data.sort_values(by='date', inplace=True)
+    return data[data['date'] <= max_date]
 
 def icgc_data():
     data = pd.read_csv(_var_code_paths['icgc'])
@@ -43,7 +52,8 @@ def read_metadata():
 meteocat_data_1000 = meteocat_data('1000')
 meteocat_data_1300 = meteocat_data('1300')
 meteocat_data_1600 = meteocat_data('1600')
-aca_data = aca_data()
+# For now, we'll only use the current_volume data (as our y)
+aca_data = aca_data()[['date', 'name', 'current_volume']]
 aca_sensors_metadata, meteocat_stations_metadata = read_metadata()
 soil_data = icgc_data()
 
@@ -122,7 +132,39 @@ def get_soil_information_between_points():
     return pd.DataFrame(soil_information)
 
 
+def transform_meteocat_dataframes(dataframe, var):
+    """
+    This function transforms the meteocat dataframes to get the following structure:
+    Index will be the date, columns will be the stations, and the values will be the variables
+    :return: DataFrame transformed
+    """
+    # Pivot the dataframe
+    df = dataframe.pivot(index='data', columns='codiEstacio', values='valor')
+    # Rename the columns
+    df.columns = [f"{col}_{var}" for col in df.columns]
+    # Ensure the index is set to the date
+    df.index.name = 'date'
+    return df
 
+def merge_all_meteocat_data(_meteocat_data_1000=meteocat_data_1000, _meteocat_data_1300=meteocat_data_1300,
+                            _meteocat_data_1600=meteocat_data_1600):
+    meteocat_data_1000_transformed = transform_meteocat_dataframes(_meteocat_data_1000, '1000')
+    meteocat_data_1300_transformed = transform_meteocat_dataframes(_meteocat_data_1300, '1300')
+    meteocat_data_1600_transformed = transform_meteocat_dataframes(_meteocat_data_1600, '1600')
+
+    # Concatenate the dataframes along the columns
+    meteocat_merged = pd.concat(
+        [meteocat_data_1000_transformed, meteocat_data_1300_transformed, meteocat_data_1600_transformed], axis=1)
+
+    return meteocat_merged
+
+
+# Create the distances file
 # utils.save_df_to_csv(calc_distances(), 'distances_and_soil_types', utils.get_root_dir() + '/model/data_prepared/')
 
-utils.save_df_to_csv(get_soil_information_between_points(), 'soil_information', utils.get_root_dir() + '/model/data_prepared/')
+# Transform the distances file into a distance and soil types file
+# utils.save_df_to_csv(get_soil_information_between_points(), 'soil_information', utils.get_root_dir() + '/model/data_prepared/')
+
+# Merge all meteocat data
+a = merge_all_meteocat_data()
+utils.save_df_to_csv(merge_all_meteocat_data(), 'meteocat_merged', utils.get_root_dir() + '/model/data_prepared/')
