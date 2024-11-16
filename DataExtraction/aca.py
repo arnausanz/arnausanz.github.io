@@ -137,6 +137,8 @@ def join_daily_data_with_all_data(daily_data_df, all_data_df=_get_all_data(), ov
     data_updated.drop_duplicates(inplace=True)
     data_updated.sort_values(by=['date', 'name'], ascending=False, inplace=True)
     data_updated.reset_index(drop=True, inplace=True)
+    # Check for random duplicates. If there are, get the average of the values and the unique of the sensor names
+    data_updated = data_updated.groupby(['date', 'name']).agg({'total_volume': 'mean', 'percentage': 'mean', 'current_volume': 'mean', 'sensor_current_volume': 'first', 'sensor_total_volume': 'first', 'sensor_percentage': 'first'}).reset_index()
     # Save the data or return it
     if overwrite:
         utils.save_df_to_csv(data_updated, "aca_daily_all", "data/processed/aca/")
