@@ -75,6 +75,12 @@ def join_meteocat_data(existing_data, new_data, overwrite=True):
     df.sort_values(by=['data', 'codiEstacio'], inplace=True, ascending=False, ignore_index=True)
     df.reset_index(drop=True, inplace=True)
     df.drop_duplicates(inplace=True)
+    # It can be yet duplicated data from some variables
+    # Group by date, station code and variable code and get the max value if variable is 1300 or 1600 and min value if it is 1000
+    if new_data['codiVariable'].iloc[0] in [1300, 1600]:
+        df = df.groupby(['data', 'codiEstacio', 'codiVariable']).max().reset_index()
+    elif new_data['codiVariable'].iloc[0] == 1000:
+        df = df.groupby(['data', 'codiEstacio', 'codiVariable']).min().reset_index()
     if overwrite:
         utils.save_df_to_csv(df, f"meteocat_{new_data['codiVariable'].iloc[0]}_daily_all", path="data/processed/meteocat/")
     else:
