@@ -156,15 +156,40 @@ def merge_all_meteocat_data(_meteocat_data_1000=meteocat_data_1000, _meteocat_da
     # Concatenate the dataframes along the columns
     meteocat_merged = pd.concat(
         [meteocat_data_1000_transformed, meteocat_data_1300_transformed, meteocat_data_1600_transformed], axis=1)
+    meteocat_merged.reset_index(inplace=True)
 
     return meteocat_merged
 
+def get_meteocat_merged_data():
+    m_merged = pd.read_csv(utils.get_root_dir() + '/model/data_prepared/meteocat_merged.csv')
+    m_merged['date'] = pd.to_datetime(m_merged['date'], format='%Y-%m-%d')
+    m_merged.set_index('date', inplace=True)
+    return m_merged
+
+def merge_all_meteocat_data_aca():
+    aca_data_transformed = aca_data.pivot(index='date', columns='name', values='current_volume')
+    aca_data_transformed.index.name = 'date'
+    # Concat with merged meteocat data
+    meteocat_merged = get_meteocat_merged_data()
+
+    # Ensure both indices are datetime and normalized to dates
+    meteocat_merged.index = pd.to_datetime(meteocat_merged.index)
+    aca_data_transformed.index = pd.to_datetime(aca_data_transformed.index)
+
+    # Concatenate the dataframes along the columns
+    merged_data = pd.concat([meteocat_merged, aca_data_transformed], axis=1)
+    return merged_data
+
+
 
 # Create the distances file
-# utils.save_df_to_csv(calc_distances(), 'distances_and_soil_types', utils.get_root_dir() + '/model/data_prepared/')
+# utils.save_df_to_csv(calc_distances(), 'distances', utils.get_root_dir() + '/model/data_prepared/')
 
 # Transform the distances file into a distance and soil types file
 # utils.save_df_to_csv(get_soil_information_between_points(), 'soil_information', utils.get_root_dir() + '/model/data_prepared/')
 
 # Merge all meteocat data
-utils.save_df_to_csv(merge_all_meteocat_data(), 'meteocat_merged', utils.get_root_dir() + '/model/data_prepared/')
+# utils.save_df_to_csv(merge_all_meteocat_data(), 'meteocat_merged', utils.get_root_dir() + '/model/data_prepared/')
+
+# Get final big DataFrame of aca and meteocat data
+# utils.save_df_to_csv(merge_all_meteocat_data_aca(), 'aca_meteocat_merged', utils.get_root_dir() + '/model/data_prepared/')
