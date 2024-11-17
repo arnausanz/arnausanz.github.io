@@ -62,7 +62,28 @@ def add_today_information(var_code):
     df_final_today = df.groupby(['data', 'codi']).sum().reset_index()
     df_final_today['codiVariable'] = corrected_var
     df_final_today.rename(columns={'codi': 'codiEstacio'}, inplace=True)
-    return df_final_today
+
+    # TODO --> Refactor this function to be more general
+    # Get yesterday_information taking into account that could bo a different month and year
+    yesterday = datetime.datetime.now() - datetime.timedelta(days=1)
+    year_1 = str(yesterday.year)
+    month_1 = str(yesterday.month)
+    day_1 = str(yesterday.day)
+    url_1 = __MEASURED_DATA_URL[0] + var_code + __MEASURED_DATA_URL[1] + year_1 + __MEASURED_DATA_URL[2] + month_1 + \
+          __MEASURED_DATA_URL[3] + day_1 + __MEASURED_DATA_URL[4]
+    response_1 = requests.get(url_1, headers=__HEADERS)
+    df_1 = pd.json_normalize(response_1.json(), record_path=['variables', 'lectures'], meta=['codi', ['variables', 'codi']])
+    df_1['data'] = df_1['data'].apply(lambda x: utils.parse_date(x, input_format="%Y-%m-%dT%H:%MZ"))
+    df_1['data'] = df_1['data'].dt.date
+    df_1.drop(columns=['estat', 'baseHoraria', 'variables.codi'], inplace=True)
+    df_1_final_today = df_1.groupby(['data', 'codi']).sum().reset_index()
+    df_1_final_today['codiVariable'] = corrected_var
+    df_1_final_today.rename(columns={'codi': 'codiEstacio'}, inplace=True)
+
+    # Concat today and yesterday information
+    df_final_today_f = pd.concat([df_final_today, df_1_final_today])
+
+    return df_final_today_f
 
 
 
@@ -100,7 +121,11 @@ def join_meteocat_data(existing_data, new_data, overwrite=True):
     new_data['data'] = pd.to_datetime(new_data['data'], format='%Y-%m-%d')
     # It can be yet duplicated data from some variables
     # Analyze if existing data contains a row for the same date and station as any in the new_data and drop it before concatenating
-    existing_data = existing_data[~existing_data.apply(lambda x: (x['data'], x['codiEstacio']) in new_data[['data', 'codiEstacio']].apply(tuple, axis=1), axis=1)]
+    existing_data = existing_data.sort_values(by=['data'], ascending=False)
+    first_date = new_data['data'].min()
+    existing_data = existing_data[~existing_data.apply(lambda x: (
+                x['data'] >= first_date and (x['data'], x['codiEstacio'], x['codiVariable']) in new_data[
+            ['data', 'codiEstacio', 'codiVariable']].apply(tuple, axis=1)), axis=1)]
     df = pd.concat([existing_data, new_data])
     df.sort_values(by=['data', 'codiEstacio'], inplace=True, ascending=False, ignore_index=True)
     df.reset_index(drop=True, inplace=True)
