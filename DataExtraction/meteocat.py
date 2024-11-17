@@ -2,7 +2,7 @@ import ast
 import numpy as np
 import requests
 import pandas as pd
-import utils
+import DataExtraction.utils as utils
 import datetime
 
 """
@@ -13,7 +13,7 @@ In the metadata files can be found the variable codes and station codes.
 __HEADERS = {"Content-Type": "application/json", "X-Api-Key": utils.set_meteocat_api_key()}
 __XEMA_BASE_URL = "https://api.meteo.cat/xema/v1/"
 __DAILY_DATA_URL = [__XEMA_BASE_URL + "variables/estadistics/diaris/", "?codiEstacio=", "&any=", "&mes=", "?any=", "&mes="]
-__MEASURED_DATA_URL = ["variables/mesurades/{var_code}/{year}/{month}/{day}", "?codiEstacio={station_code}"]
+__MEASURED_DATA_URL = [__XEMA_BASE_URL + "variables/mesurades/", "/", "/", "/", "?codiEstacio="]
 
 _MAP_DAILY_MEASURED_VARS = {
     'precipitacio': ('1300', '35'),
@@ -43,6 +43,29 @@ def get_daily_data(var_code = None, year = None, month = None, station_code = No
     data_df = pd.json_normalize(response.json(), record_path=['valors'], meta=['codiEstacio', 'codiVariable'])
     return data_df
 
+def add_today_information(var_code):
+    # Find the first tuple value of the map when passing the second one
+    corrected_var = ""
+    for key, value in _MAP_DAILY_MEASURED_VARS.items():
+        if value[1] == var_code:
+            corrected_var = int(_MAP_DAILY_MEASURED_VARS[key][0])
+            break
+    year = str(datetime.datetime.now().year)
+    month = str(datetime.datetime.now().month)
+    day = str(datetime.datetime.now().day)
+    url = __MEASURED_DATA_URL[0] + var_code + __MEASURED_DATA_URL[1] + year + __MEASURED_DATA_URL[2] + month + __MEASURED_DATA_URL[3] + day + __MEASURED_DATA_URL[4]
+    response = requests.get(url, headers=__HEADERS)
+    df = pd.json_normalize(response.json(), record_path=['variables', 'lectures'], meta=['codi', ['variables', 'codi']])
+    df['data'] = df['data'].apply(lambda x: utils.parse_date(x, input_format="%Y-%m-%dT%H:%MZ"))
+    df['data'] = df['data'].dt.date
+    df.drop(columns=['estat', 'baseHoraria', 'variables.codi'], inplace=True)
+    df_final_today = df.groupby(['data', 'codi']).sum().reset_index()
+    df_final_today['codiVariable'] = corrected_var
+    df_final_today.rename(columns={'codi': 'codiEstacio'}, inplace=True)
+    return df_final_today
+
+
+
 def transform_daily_data(data: pd.DataFrame) -> pd.DataFrame:
     """
     This function transforms the daily data from the meteocat API.
@@ -51,7 +74,11 @@ def transform_daily_data(data: pd.DataFrame) -> pd.DataFrame:
     """
     data.drop(columns=['percentatge'], inplace=True)
     data['data'] = data['data'].apply(utils.parse_date)
+    data['data'] = data['data'].dt.date
     return data
+
+def join_daily_and_today_data(daily_tf, today):
+    return pd.concat([daily_tf, today])
 
 def data_getter(var_name):
     """
@@ -71,16 +98,13 @@ def join_meteocat_data(existing_data, new_data, overwrite=True):
     """
     existing_data['data'] = pd.to_datetime(existing_data['data'], format='%Y-%m-%d')
     new_data['data'] = pd.to_datetime(new_data['data'], format='%Y-%m-%d')
+    # It can be yet duplicated data from some variables
+    # Analyze if existing data contains a row for the same date and station as any in the new_data and drop it before concatenating
+    existing_data = existing_data[~existing_data.apply(lambda x: (x['data'], x['codiEstacio']) in new_data[['data', 'codiEstacio']].apply(tuple, axis=1), axis=1)]
     df = pd.concat([existing_data, new_data])
     df.sort_values(by=['data', 'codiEstacio'], inplace=True, ascending=False, ignore_index=True)
     df.reset_index(drop=True, inplace=True)
     df.drop_duplicates(inplace=True)
-    # It can be yet duplicated data from some variables
-    # Group by date, station code and variable code and get the max value if variable is 1300 or 1600 and min value if it is 1000
-    if new_data['codiVariable'].iloc[0] in [1300, 1600]:
-        df = df.groupby(['data', 'codiEstacio', 'codiVariable']).max().reset_index()
-    elif new_data['codiVariable'].iloc[0] == 1000:
-        df = df.groupby(['data', 'codiEstacio', 'codiVariable']).min().reset_index()
     if overwrite:
         utils.save_df_to_csv(df, f"meteocat_{new_data['codiVariable'].iloc[0]}_daily_all", path="data/processed/meteocat/")
     else:
