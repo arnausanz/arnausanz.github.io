@@ -240,7 +240,7 @@ def create_temporal_windows(_df, steps):
 
     return np.array(X), np.array(y)
 
-def get_data_prepared(recalc_with_new_data = False, return_scaler = False, temporal_window = 14):
+def get_data_prepared(temporal_window, recalc_with_new_data = False, return_scaler = False):
     if recalc_with_new_data:
         # Update meteocat data and aca data and merge them
         utils.save_df_to_csv(merge_all_meteocat_data(), 'meteocat_merged', utils.get_root_dir() + '/model/data_prepared/')
@@ -253,6 +253,9 @@ def get_data_prepared(recalc_with_new_data = False, return_scaler = False, tempo
         return X, y, _
     else:
         return X, y
+
+
+# TODO --> Netejar això
 
 # Create the distances file
 # utils.save_df_to_csv(calc_distances(), 'distances', utils.get_root_dir() + '/model/data_prepared/')

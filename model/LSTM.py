@@ -40,14 +40,65 @@ class ReservoirLSTM(nn.Module):
         output = self.fc(last_timestep)  # Fully connected layer for prediction
         return output
 
+    def save_model(self, path):
+        """
+        Save the model to a file.
+
+        Parameters:
+        - path (str): File path to save the model.
+        """
+        torch.save(self.state_dict(), path)
+
+    def model_train(self, X_train, y_train, num_epochs=100, batch_size=32, lr=0.001, verbose=True, criterion=nn.MSELoss(), optimizer=torch.optim.Adam):
+        # TODO --> Implementar bé aquesta funció i fer els entrenaments a partir d'aquí
+        """
+        Train the model on the training data.
+
+        Parameters:
+        - X_train (torch.Tensor): Input training data.
+        - y_train (torch.Tensor): Target training data.
+        - num_epochs (int): Number of training epochs. Default is 100.
+        - batch_size (int): Batch size for training. Default is 32.
+        - lr (float): Learning rate for the optimizer. Default is 0.001.
+        - verbose (bool): Whether to print training loss. Default is True.
+        - criterion (torch.nn.Module): Loss function. Default is MSELoss.
+        - optimizer (torch.optim.Optimizer): Optimizer for training. Default is Adam.
+
+        Returns:
+        - list: Training losses for each epoch.
+        """
+        # Define DataLoader
+        dataset = TensorDataset(X_train, y_train)
+        dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+
+        # Loss function and optimizer
+        optimizer = optimizer(self.parameters(), lr=lr)
+
+        # Training loop
+        training_losses = []
+        for epoch in range(num_epochs):
+            self.train()
+            epoch_loss = 0.0
+            for batch_X, batch_y in dataloader:
+                optimizer.zero_grad()
+                predictions = self(batch_X)
+                loss = criterion(predictions, batch_y)
+                loss.backward()
+                optimizer.step()
+                epoch_loss += loss.item()
+            if verbose:
+                print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {epoch_loss / len(dataloader):.4f}")
+            training_losses.append(epoch_loss / len(dataloader))
+        return training_losses
+
 
 X, y = get_data_prepared(temporal_window=180)
 
 # Define parameters
 input_dim = X.shape[2]  # Number of features (from your data preparation)
-hidden_dim = 64         # Number of hidden units in the LSTM
+hidden_dim = 128         # Number of hidden units in the LSTM
 output_dim = y.shape[1] # Number of reservoirs (targets)
-num_layers = 5          # Number of LSTM layers
+num_layers = 3          # Number of LSTM layers
 
 # Initialize the model
 model = ReservoirLSTM(input_dim=input_dim, hidden_dim=hidden_dim, output_dim=output_dim, num_layers=num_layers)
