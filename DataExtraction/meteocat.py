@@ -2,7 +2,7 @@ import ast
 import numpy as np
 import requests
 import pandas as pd
-import DataExtraction.utils as utils
+import utils
 import datetime
 
 """
