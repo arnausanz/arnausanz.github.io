@@ -4,7 +4,7 @@ import aca
 import meteocat as m
 import utils
 
-log_trigger = 'Manual'
+log_trigger = 'Automatic'
 
 # Update data from ACA
 aca.join_daily_data_with_all_data(aca.transform_daily_data(aca.get_daily_data()), overwrite=True, log_trigger=log_trigger)
