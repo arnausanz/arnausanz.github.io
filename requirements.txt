@@ -14,3 +14,4 @@ tqdm~=4.67.0
 geopandas~=1.0.1
 shapely~=2.0.6
 scipy~=1.13.1
+scikit-learn~=1.5.2
