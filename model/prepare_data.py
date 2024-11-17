@@ -6,6 +6,7 @@ import geopandas as gpd
 from shapely.geometry import LineString, Point
 from tqdm import tqdm
 from scipy.spatial import cKDTree
+from sklearn.preprocessing import MinMaxScaler
 
 _var_code_paths = {
     'aca': utils.get_root_dir() + '/data/processed/aca/aca_daily_all.csv',
@@ -25,10 +26,12 @@ def meteocat_data(var_code):
     data = data[data['codiEstacio'].isin(stations_metadata['codi'])]
     return data
 
-def aca_data():
+def aca_data_getter():
     data = pd.read_csv(_var_code_paths['aca'])
     data['date'] = pd.to_datetime(data['date'], format='%Y-%m-%d')
     data.sort_values(by='date', inplace=True)
+    # For now, we'll only use the current_volume data (as our y)
+    data = data[['date', 'name', 'current_volume']].copy()
     return data
 
 def icgc_data():
@@ -46,11 +49,7 @@ def read_metadata():
     _aca_sensors_metadata.drop_duplicates(inplace=True)
     return _aca_sensors_metadata, _meteocat_stations_metadata
 
-meteocat_data_1000 = meteocat_data('1000')
-meteocat_data_1300 = meteocat_data('1300')
-meteocat_data_1600 = meteocat_data('1600')
-# For now, we'll only use the current_volume data (as our y)
-aca_data = aca_data()[['date', 'name', 'current_volume']]
+# TODO --> Això no pot estar per aquí al mig
 aca_sensors_metadata, meteocat_stations_metadata = read_metadata()
 soil_data = icgc_data()
 
@@ -143,11 +142,13 @@ def transform_meteocat_dataframes(dataframe, var):
     df.index.name = 'date'
     return df
 
-def merge_all_meteocat_data(_meteocat_data_1000=meteocat_data_1000, _meteocat_data_1300=meteocat_data_1300,
-                            _meteocat_data_1600=meteocat_data_1600):
-    meteocat_data_1000_transformed = transform_meteocat_dataframes(_meteocat_data_1000, '1000')
-    meteocat_data_1300_transformed = transform_meteocat_dataframes(_meteocat_data_1300, '1300')
-    meteocat_data_1600_transformed = transform_meteocat_dataframes(_meteocat_data_1600, '1600')
+def merge_all_meteocat_data():
+    meteocat_data_1000 = meteocat_data('1000')
+    meteocat_data_1300 = meteocat_data('1300')
+    meteocat_data_1600 = meteocat_data('1600')
+    meteocat_data_1000_transformed = transform_meteocat_dataframes(meteocat_data_1000, '1000')
+    meteocat_data_1300_transformed = transform_meteocat_dataframes(meteocat_data_1300, '1300')
+    meteocat_data_1600_transformed = transform_meteocat_dataframes(meteocat_data_1600, '1600')
 
     # Concatenate the dataframes along the columns
     meteocat_merged = pd.concat(
@@ -163,6 +164,8 @@ def get_meteocat_merged_data():
     return m_merged
 
 def merge_all_meteocat_data_aca():
+    # Get aca data
+    aca_data = aca_data_getter()
     aca_data_transformed = aca_data.pivot(index='date', columns='name', values='current_volume')
     aca_data_transformed.index.name = 'date'
     # Concat with merged meteocat data
@@ -177,6 +180,79 @@ def merge_all_meteocat_data_aca():
     return merged_data
 
 
+def get_merged_final_data_aca_meteocat():
+    return pd.read_csv(utils.get_root_dir() + '/model/data_prepared/aca_meteocat_merged.csv')
+
+
+def nan_treatment(_df):
+    # Merge all data
+    _df = merge_all_meteocat_data_aca()
+    # Fill Nan values with 0 for all 1300 and 1600 variables. For 1000 variables, fill them using interpolate
+    columns_1300 = [col for col in _df.columns if '1300' in col]
+    columns_1600 = [col for col in _df.columns if '1600' in col]
+    columns_1000 = [col for col in _df.columns if '1000' in col]
+
+    _df[columns_1300] = _df[columns_1300].fillna(0)
+    _df[columns_1600] = _df[columns_1600].fillna(0)
+    _df[columns_1000] = _df[columns_1000].interpolate(method='time').ffill().bfill()
+
+    # Fill nan values for aca data with same strategy as 1000 variables
+    aca_columns = [col for col in _df.columns if 'Embassament' in col]
+    _df[aca_columns] = _df[aca_columns].interpolate(method='time').ffill().bfill()
+
+    return _df
+
+def scale_data(_df):
+    # Scale the data
+    scaler = MinMaxScaler()
+    _df_scaled = _df.copy()
+    _df_scaled[_df_scaled.columns] = scaler.fit_transform(_df_scaled[_df_scaled.columns])
+    return _df_scaled, scaler
+
+
+def create_temporal_windows(_df, steps):
+    """
+    Generate temporal windows from a DataFrame for LSTM input.
+
+    Parameters:
+    - df (pd.DataFrame): The scaled DataFrame containing features and targets.
+    - target_columns (list): List of column names representing the target variables.
+    - steps (int): Number of time steps for the window.
+
+    Returns:
+    - X (np.ndarray): Input features with shape (samples, steps, features).
+    - y (np.ndarray): Target values with shape (samples, targets).
+    """
+    # Ensure DataFrame is sorted by time (if necessary)
+    _df = _df.sort_index()
+    target_columns = [col for col in _df.columns if 'Embassament' in col]
+
+    # Separate features and targets
+    features = _df.drop(columns=target_columns).values
+    targets = _df[target_columns].values
+
+    X, y = [], []
+
+    # Generate windows
+    for i in range(len(_df) - steps):
+        X.append(features[i:i + steps])  # Collect window of features
+        y.append(targets[i + steps])  # Target corresponds to the end of the window
+
+    return np.array(X), np.array(y)
+
+def get_data_prepared(recalc_with_new_data = False, return_scaler = False, temporal_window = 14):
+    if recalc_with_new_data:
+        # Update meteocat data and aca data and merge them
+        utils.save_df_to_csv(merge_all_meteocat_data(), 'meteocat_merged', utils.get_root_dir() + '/model/data_prepared/')
+        utils.save_df_to_csv(merge_all_meteocat_data_aca(), 'aca_meteocat_merged', utils.get_root_dir() + '/model/data_prepared/')
+    df = get_merged_final_data_aca_meteocat()
+    df = nan_treatment(df)
+    df_scaled, _ = scale_data(df)
+    X, y = create_temporal_windows(df_scaled, temporal_window)
+    if return_scaler:
+        return X, y, _
+    else:
+        return X, y
 
 # Create the distances file
 # utils.save_df_to_csv(calc_distances(), 'distances', utils.get_root_dir() + '/model/data_prepared/')
@@ -190,3 +266,15 @@ def merge_all_meteocat_data_aca():
 # Get final big DataFrame of aca and meteocat data
 # utils.save_df_to_csv(merge_all_meteocat_data_aca(), 'aca_meteocat_merged', utils.get_root_dir() + '/model/data_prepared/')
 
+
+
+# df = nan_treatment(get_merged_final_data_aca_meteocat())
+# print(df.head())
+# df_scaled, _ = scale_data(df)
+# print(df_scaled.head())
+
+# X, y = create_temporal_windows(df_scaled, 14)
+# print(X, y)
+
+# X, y = get_data_prepared()
+# print(X, y)
