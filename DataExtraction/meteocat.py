@@ -59,7 +59,15 @@ def add_today_information(var_code):
     df['data'] = df['data'].apply(lambda x: utils.parse_date(x, input_format="%Y-%m-%dT%H:%MZ"))
     df['data'] = df['data'].dt.date
     df.drop(columns=['estat', 'baseHoraria', 'variables.codi'], inplace=True)
-    df_final_today = df.groupby(['data', 'codi']).sum().reset_index()
+    # If variable is 35: sum, if 32: mean, if 38: last value
+    if var_code == '35':
+        df_final_today = df.groupby(['data', 'codi']).sum().reset_index()
+    elif var_code == '32':
+        df_final_today = df.groupby(['data', 'codi']).mean().reset_index()
+    elif var_code == '38':
+        df_final_today = df.groupby(['data', 'codi']).last().reset_index()
+    else:
+        raise ValueError("Variable code not recognized")
     df_final_today['codiVariable'] = corrected_var
     df_final_today.rename(columns={'codi': 'codiEstacio'}, inplace=True)
 
@@ -76,7 +84,15 @@ def add_today_information(var_code):
     df_1['data'] = df_1['data'].apply(lambda x: utils.parse_date(x, input_format="%Y-%m-%dT%H:%MZ"))
     df_1['data'] = df_1['data'].dt.date
     df_1.drop(columns=['estat', 'baseHoraria', 'variables.codi'], inplace=True)
-    df_1_final_today = df_1.groupby(['data', 'codi']).sum().reset_index()
+    # If variable is 35: sum, if 32: mean, if 38: last value
+    if var_code == '35':
+        df_1_final_today = df.groupby(['data', 'codi']).sum().reset_index()
+    elif var_code == '32':
+        df_1_final_today = df.groupby(['data', 'codi']).mean().reset_index()
+    elif var_code == '38':
+        df_1_final_today = df.groupby(['data', 'codi']).last().reset_index()
+    else:
+        raise ValueError("Variable code not recognized")
     df_1_final_today['codiVariable'] = corrected_var
     df_1_final_today.rename(columns={'codi': 'codiEstacio'}, inplace=True)
 
@@ -99,6 +115,8 @@ def transform_daily_data(data: pd.DataFrame) -> pd.DataFrame:
     return data
 
 def join_daily_and_today_data(daily_tf, today):
+    # Check if in daily there are values of today's date, variable and station and drop them before cancatenating
+    daily_tf = daily_tf[~daily_tf.apply(lambda x: (x['data'], x['codiEstacio'], x['codiVariable']) in today[['data', 'codiEstacio', 'codiVariable']].apply(tuple, axis=1), axis=1)]
     return pd.concat([daily_tf, today])
 
 def data_getter(var_name):

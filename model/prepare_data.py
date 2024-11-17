@@ -139,8 +139,8 @@ def transform_meteocat_dataframes(dataframe, var):
     try:
         df = dataframe.pivot(index='data', columns='codiEstacio', values='valor')
     except:
-        # Print for the date 2024-10-01 the values of station X4
-        print(dataframe[(dataframe['data'] == '2024-10-01') & (dataframe['codiEstacio'] == 'X4')])
+        # Print potential duplicates
+        print(dataframe[dataframe.duplicated(subset=['data', 'codiEstacio'], keep=False)])
     # Rename the columns
     df.columns = [f"{col}_{var}" for col in df.columns]
     # Ensure the index is set to the date
@@ -193,3 +193,6 @@ def merge_all_meteocat_data_aca():
 
 # Get final big DataFrame of aca and meteocat data
 # utils.save_df_to_csv(merge_all_meteocat_data_aca(), 'aca_meteocat_merged', utils.get_root_dir() + '/model/data_prepared/')
+
+# print duplicated values for meteocat data 1000 for date, station
+# print(meteocat_data_1000[meteocat_data_1000.duplicated(subset=['data', 'codiEstacio'], keep=False)])
