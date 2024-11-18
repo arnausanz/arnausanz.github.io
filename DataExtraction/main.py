@@ -4,10 +4,10 @@ import aca
 import meteocat as m
 import utils
 
-log_trigger = 'Automatic'
+log_trigger = 'Manual'
 
 # Update data from ACA
-aca.join_daily_data_with_all_data(aca.transform_daily_data(aca.get_daily_data()), overwrite=True, log_trigger=log_trigger)
+# aca.join_daily_data_with_all_data(aca.transform_daily_data(aca.get_daily_data()), overwrite=True, log_trigger=log_trigger)
 print('ACA data updated successfully')
 
 # Update data from Meteocat

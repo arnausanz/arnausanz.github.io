@@ -92,8 +92,8 @@ class ReservoirLSTM(nn.Module):
         return training_losses
 
 
-X, y = get_data_prepared(temporal_window=180)
-
+X, y = get_data_prepared(temporal_window=180, recalc_with_new_data=True)
+a
 # Define parameters
 input_dim = X.shape[2]  # Number of features (from your data preparation)
 hidden_dim = 128         # Number of hidden units in the LSTM

@@ -16,6 +16,9 @@ _var_code_paths = {
     'icgc': utils.get_root_dir() + '/data/processed/icgc/cobertes_sol.csv'
 }
 
+# These sensors are ignored since we don't have historical data for them
+ignored_sensors = ['Embassament de Pasteral (la Cellera de Ter)', 'Embassament de Gaià (el Catllar)']
+
 def meteocat_data(var_code):
     data = pd.read_csv(_var_code_paths[var_code])
     data['data'] = pd.to_datetime(data['data'], format='%Y-%m-%d')
@@ -32,6 +35,7 @@ def aca_data_getter():
     data.sort_values(by='date', inplace=True)
     # For now, we'll only use the current_volume data (as our y)
     data = data[['date', 'name', 'current_volume']].copy()
+    data = data[~data['name'].isin(ignored_sensors)]
     return data
 
 def icgc_data():

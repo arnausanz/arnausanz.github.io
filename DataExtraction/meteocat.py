@@ -71,35 +71,7 @@ def add_today_information(var_code):
     df_final_today['codiVariable'] = corrected_var
     df_final_today.rename(columns={'codi': 'codiEstacio'}, inplace=True)
 
-    # TODO --> Refactor this function to be more general
-    # Get yesterday_information taking into account that could bo a different month and year
-    yesterday = datetime.datetime.now() - datetime.timedelta(days=1)
-    year_1 = str(yesterday.year)
-    month_1 = str(yesterday.month)
-    day_1 = str(yesterday.day)
-    url_1 = __MEASURED_DATA_URL[0] + var_code + __MEASURED_DATA_URL[1] + year_1 + __MEASURED_DATA_URL[2] + month_1 + \
-          __MEASURED_DATA_URL[3] + day_1 + __MEASURED_DATA_URL[4]
-    response_1 = requests.get(url_1, headers=__HEADERS)
-    df_1 = pd.json_normalize(response_1.json(), record_path=['variables', 'lectures'], meta=['codi', ['variables', 'codi']])
-    df_1['data'] = df_1['data'].apply(lambda x: utils.parse_date(x, input_format="%Y-%m-%dT%H:%MZ"))
-    df_1['data'] = df_1['data'].dt.date
-    df_1.drop(columns=['estat', 'baseHoraria', 'variables.codi'], inplace=True)
-    # If variable is 35: sum, if 32: mean, if 38: last value
-    if var_code == '35':
-        df_1_final_today = df.groupby(['data', 'codi']).sum().reset_index()
-    elif var_code == '32':
-        df_1_final_today = df.groupby(['data', 'codi']).mean().reset_index()
-    elif var_code == '38':
-        df_1_final_today = df.groupby(['data', 'codi']).last().reset_index()
-    else:
-        raise ValueError("Variable code not recognized")
-    df_1_final_today['codiVariable'] = corrected_var
-    df_1_final_today.rename(columns={'codi': 'codiEstacio'}, inplace=True)
-
-    # Concat today and yesterday information
-    df_final_today_f = pd.concat([df_final_today, df_1_final_today])
-
-    return df_final_today_f
+    return df_final_today
 
 
 
@@ -115,8 +87,11 @@ def transform_daily_data(data: pd.DataFrame) -> pd.DataFrame:
     return data
 
 def join_daily_and_today_data(daily_tf, today):
-    # Check if in daily there are values of today's date, variable and station and drop them before cancatenating
-    daily_tf = daily_tf[~daily_tf.apply(lambda x: (x['data'], x['codiEstacio'], x['codiVariable']) in today[['data', 'codiEstacio', 'codiVariable']].apply(tuple, axis=1), axis=1)]
+    # Delete from the daily_tf the rows that have the same date as the unique in today
+    daily_tf['data'] = pd.to_datetime(daily_tf['data'], format='%Y-%m-%d')
+    today['data'] = pd.to_datetime(today['data'], format='%Y-%m-%d')
+    day = today['data'].unique()
+    daily_tf = daily_tf[~daily_tf['data'].isin(day)]
     return pd.concat([daily_tf, today])
 
 def data_getter(var_name):
@@ -144,6 +119,9 @@ def join_meteocat_data(existing_data, new_data, overwrite=True):
     existing_data = existing_data[~existing_data.apply(lambda x: (
                 x['data'] >= first_date and (x['data'], x['codiEstacio'], x['codiVariable']) in new_data[
             ['data', 'codiEstacio', 'codiVariable']].apply(tuple, axis=1)), axis=1)]
+    # Drop data from same date, variable and station as in new data from existing data
+    days = new_data['data'].unique()
+    existing_data = existing_data[~existing_data['data'].isin(days)].copy()
     df = pd.concat([existing_data, new_data])
     df.sort_values(by=['data', 'codiEstacio'], inplace=True, ascending=False, ignore_index=True)
     df.reset_index(drop=True, inplace=True)
