@@ -4,10 +4,11 @@ import aca
 import meteocat as m
 import utils
 
-log_trigger = 'Manual'
+log_trigger = 'Automatic'
 
 # Update data from ACA
-# aca.join_daily_data_with_all_data(aca.transform_daily_data(aca.get_daily_data()), overwrite=True, log_trigger=log_trigger)
+print('Updating ACA data...')
+aca.join_daily_data_with_all_data(aca.transform_daily_data(aca.get_daily_data()), overwrite=True, log_trigger=log_trigger)
 print('ACA data updated successfully')
 
 # Update data from Meteocat
@@ -20,6 +21,7 @@ today_vars = {
 current_month = datetime.now().month - 1 if datetime.now().day == 1 else datetime.now().month
 current_year = datetime.now().year
 for var in meteocat_vars:
+    print(f'Updating Meteocat data for variable {var}...')
     m.log_meteocat_data(var, current_year, current_month, trigger=log_trigger)
     today_values = m.add_today_information(today_vars[var])
     daily_values = m.transform_daily_data(m.get_daily_data(var, current_year, current_month))
