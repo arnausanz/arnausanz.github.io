@@ -11,9 +11,6 @@ In the metadata files can be found the variable codes and station codes.
 """
 
 __HEADERS = {"Content-Type": "application/json", "X-Api-Key": utils.set_meteocat_api_key()}
-__XEMA_BASE_URL = "https://api.meteo.cat/xema/v1/"
-__DAILY_DATA_URL = [__XEMA_BASE_URL + "variables/estadistics/diaris/", "?codiEstacio=", "&any=", "&mes=", "?any=", "&mes="]
-__MEASURED_DATA_URL = [__XEMA_BASE_URL + "variables/mesurades/", "/", "/", "/", "?codiEstacio="]
 
 _MAP_DAILY_MEASURED_VARS = {
     'precipitacio': ('1300', '35'),
@@ -21,66 +18,68 @@ _MAP_DAILY_MEASURED_VARS = {
     'gruix_neu': ('1600', '38')
 }
 
-def get_daily_data(var_code = None, year = None, month = None, station_code = None) -> pd.DataFrame:
+def get_daily_data(var_code = None, year = None, month = None) -> pd.DataFrame:
     """
-    This function retrieves the daily data from the meteocat API.
+    Retrieves the daily data from the meteocat API.
     :param var_code: code of the variable to retrieve
     :param year: Year of the data
     :param month: Month of the data
-    :param station_code: Code of the station to retrieve the data from, if None, all stations will be retrieved
     :return: DataFrame with the daily data
     """
-    station_code = "" if station_code is None else station_code
-    url = __DAILY_DATA_URL[0] + var_code + __DAILY_DATA_URL[1] + station_code + __DAILY_DATA_URL[2] + year + __DAILY_DATA_URL[3] + month
+    url = "https://api.meteo.cat/xema/v1/variables/estadistics/diaris/" + var_code + "?codiEstacio=&any=" + year + "&mes=" + month
     response = requests.get(url, headers=__HEADERS)
     data_df = pd.json_normalize(response.json(), record_path=['valors'], meta=['codiEstacio', 'codiVariable'])
     return data_df
 
 def add_today_information(var_code):
-    # Find the first tuple value of the map when passing the second one
-    corrected_var = ""
-    for key, value in _MAP_DAILY_MEASURED_VARS.items():
-        if value[1] == var_code:
-            corrected_var = int(_MAP_DAILY_MEASURED_VARS[key][0])
-            break
+    """
+    Retrieve the information of the current day for the variable passed as parameter as the daily data with month and year doesn't provide it.
+    As the variable code is different in the daily data and the today data, it is necessary to correct it.
+    :param var_code: Variable code to retrieve the data (35, 32, 38)
+    :return: DataFrame with the data of the current day and the corrected variable code
+    """
+    # Map the variable code to the correct one
+    corrected_var = next((int(value[0]) for key, value in _MAP_DAILY_MEASURED_VARS.items() if value[1] == var_code), "")
     year = str(datetime.datetime.now().year)
     month = str(datetime.datetime.now().month)
     day = str(datetime.datetime.now().day)
-    url = __MEASURED_DATA_URL[0] + var_code + __MEASURED_DATA_URL[1] + year + __MEASURED_DATA_URL[2] + month + __MEASURED_DATA_URL[3] + day + __MEASURED_DATA_URL[4]
+    url = "https://api.meteo.cat/xema/v1/variables/mesurades/" + var_code + "/" + year + "/" + month + "/" + day + "?codiEstacio="
     response = requests.get(url, headers=__HEADERS)
     df = pd.json_normalize(response.json(), record_path=['variables', 'lectures'], meta=['codi', ['variables', 'codi']])
-    df['data'] = df['data'].apply(lambda x: datetime.datetime.strptime(x, "%Y-%m-%dT%H:%MZ"))
-    df['data'] = df['data'].dt.date
+    df['data'] = pd.to_datetime(df['data'], format="%Y-%m-%dT%H:%MZ").dt.date
     df.drop(columns=['estat', 'baseHoraria', 'variables.codi'], inplace=True)
-    # If variable is 35: sum, if 32: mean, if 38: last value
-    if var_code == '35':
-        df_final_today = df.groupby(['data', 'codi']).sum().reset_index()
-    elif var_code == '32':
-        df_final_today = df.groupby(['data', 'codi']).mean().reset_index()
-    elif var_code == '38':
-        df_final_today = df.groupby(['data', 'codi']).last().reset_index()
+    # If variable is 35: sum (rain), if 32: mean (temperature), if 38: last value (snow accumulation)
+    aggregation_functions = {
+        '35': 'sum',
+        '32': 'mean',
+        '38': 'last'
+    }
+    if var_code in aggregation_functions:
+        df_final_today = df.groupby(['data', 'codi']).agg(aggregation_functions[var_code]).reset_index()
     else:
         raise ValueError("Variable code not recognized")
     df_final_today['codiVariable'] = corrected_var
     df_final_today.rename(columns={'codi': 'codiEstacio'}, inplace=True)
-
     return df_final_today
-
-
 
 def transform_daily_data(data: pd.DataFrame) -> pd.DataFrame:
     """
-    This function transforms the daily data from the meteocat API.
+    Transforms the daily data from the meteocat API.
     :param data: DataFrame with the daily data
     :return: DataFrame with the transformed data
     """
     data.drop(columns=['percentatge'], inplace=True)
-    data['data'] = data['data'].apply(lambda x: datetime.datetime.strptime(x, "%Y-%m-%dZ"))
-    data['data'] = data['data'].dt.date
+    data['data'] = pd.to_datetime(data['data'], format="%Y-%m-%dZ").dt.date
     return data
 
 def join_daily_and_today_data(daily_tf, today):
-    # Delete from the daily_tf the rows that have the same date as the unique in today
+    """
+    Joins the daily data with the data of the current day.
+    :param daily_tf: DataFrame with the daily data
+    :param today: DataFrame with the data of the current day
+    :return: DataFrame with the joined data
+    """
+    # Delete the data of the current day from the daily data if exists
     daily_tf['data'] = pd.to_datetime(daily_tf['data'], format='%Y-%m-%d')
     today['data'] = pd.to_datetime(today['data'], format='%Y-%m-%d')
     day = today['data'].unique()
@@ -89,7 +88,7 @@ def join_daily_and_today_data(daily_tf, today):
 
 def data_getter(var_name):
     """
-    Function to retrieve already stored data
+    Retrieves already stored data
     :param var_name: Name of the variable
     :return: DataFrame with the data
     """
@@ -101,17 +100,10 @@ def join_meteocat_data(existing_data, new_data, overwrite=True):
     :param existing_data: Existing data extracted from the file
     :param new_data: DataFrame with the new data
     :param overwrite: If True, it will overwrite the existing file
-    :return: DataFrame with the joined data
+    :return: DataFrame with the joined data if overwrite is False
     """
     existing_data['data'] = pd.to_datetime(existing_data['data'], format='%Y-%m-%d')
     new_data['data'] = pd.to_datetime(new_data['data'], format='%Y-%m-%d')
-    # It can be yet duplicated data from some variables
-    # Analyze if existing data contains a row for the same date and station as any in the new_data and drop it before concatenating
-    existing_data = existing_data.sort_values(by=['data'], ascending=False)
-    first_date = new_data['data'].min()
-    existing_data = existing_data[~existing_data.apply(lambda x: (
-                x['data'] >= first_date and (x['data'], x['codiEstacio'], x['codiVariable']) in new_data[
-            ['data', 'codiEstacio', 'codiVariable']].apply(tuple, axis=1)), axis=1)]
     # Drop data from same date, variable and station as in new data from existing data
     days = new_data['data'].unique()
     existing_data = existing_data[~existing_data['data'].isin(days)].copy()
@@ -125,16 +117,23 @@ def join_meteocat_data(existing_data, new_data, overwrite=True):
         return df
 
 def print_api_usage():
+    """
+    To check if we can exceed the limit of the API
+    :return: None
+    """
     print(requests.get('https://api.meteo.cat/quotes/v1/consum-actual', headers=__HEADERS).json())
 
-
+"""
 def concat_meteocat_data_from_two_different_sources(data_from_manual_source_path, data_from_api_source_path):
-    """
-    # TODO -> Aquesta funció serveix per unir les variables 1000 i 1600 amb les corresponents extretes manualment (32 i 38)
-    :param data_from_api_source_path:
-    :param data_from_manual_source_path:
+    #########################################################################################################
+    As API usage was exceeded once, this function is used to concatenate the data from the API and the manual data extrected to avoid exceeding the limit again.
+    -------------------------------------------
+    AVOID USING THIS FUNCTION UNLESS NECESSARY
+    -------------------------------------------
+    :param data_from_api_source_path: Path to the data from the API
+    :param data_from_manual_source_path: Path to the data from the manual extraction
     :return: DataFrame with concatenated data
-    """
+    #########################################################################################################
     manual_data_df = pd.read_csv(data_from_manual_source_path)
     api_data_df = pd.read_csv(data_from_api_source_path)
     manual_data_df['by_day_data_lectura'] = manual_data_df['by_day_data_lectura'].apply(lambda x: datetime.datetime.strptime(x, '%m/%d/%Y %I:%M:%S %p'))
@@ -147,6 +146,7 @@ def concat_meteocat_data_from_two_different_sources(data_from_manual_source_path
     result = pd.concat([api_data_df, manual_data_df])
     result.sort_values(by=['data'], inplace=True, ascending=False, ignore_index=True)
     return result
+"""
 
 def log_meteocat_data(var_name, year, month, trigger = "Manual"):
     log_file = 'logs/meteocat_data_update.txt'
@@ -157,8 +157,9 @@ def log_meteocat_data(var_name, year, month, trigger = "Manual"):
 
 def get_stations_metadata():
     """
-    Function to get the metadata with coordinates of the stations (only the active ones)
-    :return:
+    To get the metadata with coordinates of the stations (only the active ones) and save it to a csv file.
+    CAUTION --> It will overwrite the existing file.
+    :return: None
     """
     path = utils.get_root_dir() + '/DataExtraction/metadata/meteocat_metadata/stations_metadata.csv'
     data = pd.read_csv(path)
@@ -166,15 +167,3 @@ def get_stations_metadata():
     data['estats'] = data['estats'].apply(lambda x: x if len(x) == 1 else np.nan)
     data.dropna(subset=['estats'], inplace=True)
     data[['codi', 'altitud', 'coordenades.latitud', 'coordenades.longitud']].to_csv(utils.get_root_dir() + '/data/processed/meteocat/stations_metadata.csv', index=False)
-
-
-# get_stations_metadata()
-
-# save_df_to_csv(get_daily_data("1300",  "1989", "02"), "test7")
-
-# join_meteocat_data(data_getter("1300"), transform_daily_data(get_daily_data("1300",  "2024", "10")), overwrite=True)
-
-# joined_32_1000 = concat_meteocat_data_from_tow_different_sources('../data/raw/meteocat_raw/32/32_manual.csv', '../data/processed/meteocat/meteocat_1000_daily_all.csv')
-# joined_38_1600 = concat_meteocat_data_from_tow_different_sources('../data/raw/meteocat_raw/38/38_manual.csv', '../data/processed/meteocat/meteocat_1600_daily_all.csv')
-# utils.save_df_to_csv(joined_32_1000, 'meteocat_1000_daily_all', 'data/processed/meteocat/')
-# utils.save_df_to_csv(joined_38_1600, 'meteocat_1600_daily_all', 'data/processed/meteocat/')

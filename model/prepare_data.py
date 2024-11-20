@@ -3,7 +3,7 @@ import numpy as np
 from geopy.distance import geodesic
 import DataExtraction.utils as utils
 import geopandas as gpd
-from shapely.geometry import LineString, Point
+from shapely.geometry import LineString
 from tqdm import tqdm
 from scipy.spatial import cKDTree
 from sklearn.preprocessing import MinMaxScaler
