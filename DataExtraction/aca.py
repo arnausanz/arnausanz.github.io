@@ -8,9 +8,6 @@ This file is used to extract daily data from ACA API.
 As real time data is only available for 3 months, the oldest data is downloaded from: https://analisi.transparenciacatalunya.cat/Medi-Ambient/Quantitat-d-aigua-als-embassaments-de-les-Conques-/gn9e-3qhr/about_data
 """
 
-# Base url for data
-_RESERVOIR_DATA_BASE_URL = ["http://aca-web.gencat.cat/sdim2/apirest/data/EMBASSAMENT-EST/", "?limit=-1&from=", "T00:00:00&to=", "T23:59:59"]
-
 # As the names of the reservoirs are not the same in the metadata and in the data, we need to map them
 _NAME_MATCHING_DICT = {
     'Foix (Castellet i la Gornal)': 'Embassament de Foix (Castellet i la Gornal)',
@@ -54,7 +51,7 @@ def get_daily_data():
     sensor_codes = get_all_sensor_codes()
     # Retrieve data from all the sensors
     for sensor in sensor_codes:
-        url = _RESERVOIR_DATA_BASE_URL[0] + sensor + _RESERVOIR_DATA_BASE_URL[1] + date_from + _RESERVOIR_DATA_BASE_URL[2] + date_to + _RESERVOIR_DATA_BASE_URL[3]
+        url = "http://aca-web.gencat.cat/sdim2/apirest/data/EMBASSAMENT-EST/" + sensor + "?limit=-1&from=" + date_from + "T00:00:00&to=" + date_to + "T23:59:59"
         response = requests.get(url)
         df = pd.json_normalize(response.json(), record_path=['observations'])
         df['sensor'] = sensor
