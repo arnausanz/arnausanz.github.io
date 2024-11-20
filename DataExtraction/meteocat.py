@@ -21,7 +21,7 @@ _MAP_DAILY_MEASURED_VARS = {
     'gruix_neu': ('1600', '38')
 }
 
-def get_daily_data(var_code = None, year = None, month = None, station_code = None, verbose=True) -> pd.DataFrame:
+def get_daily_data(var_code = None, year = None, month = None, station_code = None) -> pd.DataFrame:
     """
     This function retrieves the daily data from the meteocat API.
     :param var_code: code of the variable to retrieve
@@ -31,15 +31,9 @@ def get_daily_data(var_code = None, year = None, month = None, station_code = No
     :param verbose: If True, it will print the API call message
     :return: DataFrame with the daily data
     """
-    var_code, year, month = utils.check_str_int(var_code), utils.check_str_int(year), utils.check_str_int(month)
     station_code = "" if station_code is None else station_code
     url = __DAILY_DATA_URL[0] + var_code + __DAILY_DATA_URL[1] + station_code + __DAILY_DATA_URL[2] + year + __DAILY_DATA_URL[3] + month
     response = requests.get(url, headers=__HEADERS)
-    if station_code == "" and verbose:
-        utils.calling_api_message('meteocat_raw', 'Daily data from all stations - Year: ' + year + ' Month: ' + month + ' - Var: ' + var_code)
-    elif verbose:
-        utils.calling_api_message('meteocat_raw', 'Daily data from station: ' + station_code + ' - Year: ' + year + ' Month: ' + month + ' - Var: ' + var_code)
-    utils.print_response_info(response) if verbose else None
     data_df = pd.json_normalize(response.json(), record_path=['valors'], meta=['codiEstacio', 'codiVariable'])
     return data_df
 
@@ -56,7 +50,7 @@ def add_today_information(var_code):
     url = __MEASURED_DATA_URL[0] + var_code + __MEASURED_DATA_URL[1] + year + __MEASURED_DATA_URL[2] + month + __MEASURED_DATA_URL[3] + day + __MEASURED_DATA_URL[4]
     response = requests.get(url, headers=__HEADERS)
     df = pd.json_normalize(response.json(), record_path=['variables', 'lectures'], meta=['codi', ['variables', 'codi']])
-    df['data'] = df['data'].apply(lambda x: utils.parse_date(x, input_format="%Y-%m-%dT%H:%MZ"))
+    df['data'] = df['data'].apply(lambda x: datetime.datetime.strptime(x, "%Y-%m-%dT%H:%MZ"))
     df['data'] = df['data'].dt.date
     df.drop(columns=['estat', 'baseHoraria', 'variables.codi'], inplace=True)
     # If variable is 35: sum, if 32: mean, if 38: last value
@@ -82,7 +76,7 @@ def transform_daily_data(data: pd.DataFrame) -> pd.DataFrame:
     :return: DataFrame with the transformed data
     """
     data.drop(columns=['percentatge'], inplace=True)
-    data['data'] = data['data'].apply(utils.parse_date)
+    data['data'] = data['data'].apply(lambda x: datetime.datetime.strptime(x, "%Y-%m-%dZ"))
     data['data'] = data['data'].dt.date
     return data
 
@@ -144,7 +138,7 @@ def concat_meteocat_data_from_two_different_sources(data_from_manual_source_path
     """
     manual_data_df = pd.read_csv(data_from_manual_source_path)
     api_data_df = pd.read_csv(data_from_api_source_path)
-    manual_data_df['by_day_data_lectura'] = manual_data_df['by_day_data_lectura'].apply(lambda x: utils.parse_date(x, input_format='%m/%d/%Y %I:%M:%S %p'))
+    manual_data_df['by_day_data_lectura'] = manual_data_df['by_day_data_lectura'].apply(lambda x: datetime.datetime.strptime(x, '%m/%d/%Y %I:%M:%S %p'))
     manual_data_df['CODI_VARIABLE'] = api_data_df['codiVariable'].iloc[0]
     manual_data_df['VALOR_LECTURA'] = manual_data_df['VALOR_LECTURA'].astype(float)
     manual_data_df.sort_values(by=['by_day_data_lectura'], inplace=True, ascending=False, ignore_index=True)

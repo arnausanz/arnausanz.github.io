@@ -208,7 +208,7 @@ def transform_historical_data(aca_historical_data_src = "data/raw/aca/manual_dow
     # Access raw data file (updated manually)
     aca_historical_data_src = utils.get_root_dir() + "/" + aca_historical_data_src
     df = pd.read_csv(aca_historical_data_src, dtype={'Dia': 'str'})
-    df['Dia'] = df['Dia'].apply(lambda x: utils.parse_date(x, "%d/%m/%Y"))
+    df['Dia'] = df['Dia'].apply(lambda x: datetime.datetime.strptime(x, "%d/%m/%Y"))
     df.sort_values(by=['Dia'], ascending=True, inplace=True)
     # Rename columns
     df.columns = ['date', 'name', 'total_volume', 'percentage', 'current_volume']
