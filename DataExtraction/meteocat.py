@@ -28,7 +28,6 @@ def get_daily_data(var_code = None, year = None, month = None, station_code = No
     :param year: Year of the data
     :param month: Month of the data
     :param station_code: Code of the station to retrieve the data from, if None, all stations will be retrieved
-    :param verbose: If True, it will print the API call message
     :return: DataFrame with the daily data
     """
     station_code = "" if station_code is None else station_code
