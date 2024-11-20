@@ -6,6 +6,11 @@ import utils
 from tqdm import tqdm
 import math
 
+"""
+This file contains the code to extract the soil cover data from the ICGC dataset.
+It reads the TIFF file containing the soil cover data, samples a low percentage of the pixels, save a CSV file with it's information.
+"""
+
 # Dictionary with the different types of soil
 SOIL_TYPE = {
     1: "Conreus herbacis",
@@ -54,77 +59,46 @@ SOIL_TYPE = {
 
 input_file = utils.get_root_dir() + '/data/raw/icgc/cobertes-sol-2022.tif'
 output_file = utils.get_root_dir() + '/data/processed/icgc/cobertes_sol.csv'
+output_crs = 'EPSG:4326'
 
 
-dst_crs = 'EPSG:4326'
 # Open the TIFF image
 with rasterio.open(input_file) as dataset:
-    # Get the transform information (affine transformation for pixel-to-coordinate mapping)
+    # Get the transform information
     transform_affine = dataset.transform
-    src_crs = dataset.crs  # Get the original CRS of the dataset
-    transformer = Transformer.from_crs(src_crs, dst_crs, always_xy=True)
+    input_crs = dataset.crs
+    transformer = Transformer.from_crs(input_crs, output_crs, always_xy=True)
 
-    # Prepare to store results
     pixel_classes = []
-
-    # Calculate the stride size to sample approximately 1% of the pixels
+    # Calculate a low percentage of the total pixels to sample
     total_pixels = dataset.width * dataset.height
-    target_sample_size = math.ceil(total_pixels * 0.00001)  # 0.001% of the total pixels
+    target_sample_size = math.ceil(total_pixels * 0.000025)  # 0.0025% of the total pixels
     stride = int(math.sqrt(total_pixels / target_sample_size))
-
+    # Print total pixels, target sample size, and stride
     print(f"Total Pixels: {total_pixels}, Target Sample Size: {target_sample_size}, Stride: {stride}")
 
-    # Use a progress bar
+    # Use a progress bar to track the processing
     num_rows = dataset.height // stride
     num_cols = dataset.width // stride
     total_samples = num_rows * num_cols
-
+    # Use the progress bar
     with tqdm(total=total_samples, desc="Processing sampled pixels") as pbar:
         for i in range(0, dataset.height, stride):
             for j in range(0, dataset.width, stride):
                 # Read only a single pixel at (i, j)
                 window = Window(j, i, 1, 1)
-                data = dataset.read(1, window=window)  # Read the first band for this pixel
+                data = dataset.read(1, window=window)
                 transform_affine_chunk = dataset.window_transform(window)
-
-                # Get the pixel value (class) at this location
+                # Get the pixel class
                 class_value = data[0, 0]
-
-                # Convert pixel coordinates to the source spatial coordinates
-                x_src, y_src = rasterio.transform.xy(
-                    transform_affine_chunk, 0, 0, offset='center'
-                )
-
-                # Reproject coordinates to latitude and longitude
+                # Convert pixel coordinates to latitude and longitude
+                x_src, y_src = rasterio.transform.xy(transform_affine_chunk, 0, 0, offset='center')
                 x_lon, y_lat = transformer.transform(x_src, y_src)
-
-                # Append the latitude, longitude, and class to the list
+                # Append latitude, longitude, and class to the list
                 pixel_classes.append((y_lat, x_lon, class_value))
-
                 # Update the progress bar
                 pbar.update(1)
 
-# Now, pixel_classes contains 1% of the sampled pixels across the raster
-
-# Now, pixel_classes contains all the data you processed
-
-# Example: print first 10 pixels
-print(pixel_classes[:10])
+# Create a DataFrame from the pixel_classes list and save it to a CSV file
 df = pd.DataFrame(pixel_classes, columns=['Latitude', 'Longitude', 'Class'])
 df.to_csv(output_file, index=False)
-
-# Define the transformer to convert from latitude and longitude to UTM coordinates
-# transformer = Transformer.from_crs("EPSG:4326", "EPSG:25831", always_xy=True)
-
-def convert_lat_lon_to_utm(lat, lon):
-    """
-    Convert latitude and longitude to UTM coordinates
-    :param lat: Latitude
-    :param lon: Longitude
-    :return: UTM coordinates
-    """
-    # x, y = transformer.transform(lat, lon)
-    # return x, y
-    pass
-
-print(convert_lat_lon_to_utm(2.154007, 41.390205))
