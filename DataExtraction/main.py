@@ -9,7 +9,7 @@ Used to update automatically the data every day.
 Can be executed manually to update the data (change the log_trigger to 'Manual') or automatically by the scheduler.
 """
 
-_log_trigger = 'Manual'
+_log_trigger = 'Automatic'
 
 # Update data from ACA
 print('Updating ACA data...')

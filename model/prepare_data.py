@@ -8,6 +8,13 @@ from tqdm import tqdm
 from scipy.spatial import cKDTree
 from sklearn.preprocessing import MinMaxScaler
 
+"""
+This file is used to prepare the data for the LSTM model. 
+It has 2 parts:
+1. Data extraction: Functions to get the data from the daily updated files and join them
+2. Data preparation: Functions to prepare the data for the LSTM model
+"""
+
 _var_code_paths = {
     'aca': utils.get_root_dir() + '/data/processed/aca/aca_daily_all.csv',
     '1300': utils.get_root_dir() + '/data/processed/meteocat/meteocat_1300_daily_all.csv',
@@ -202,6 +209,29 @@ def merge_all_meteocat_data_aca():
     merged_data = pd.concat([meteocat_merged, aca_data_transformed], axis=1)
     return merged_data
 
+def update_soil_data():
+    # Create the distances file
+    utils.save_df_to_csv(calc_distances(), 'distances', utils.get_root_dir() + '/model/data_prepared/')
+    # Transform the distances file into a distance and soil types file
+    geo_stations, geo_sensors, geo_soil = get_geodataframes()
+    utils.save_df_to_csv(get_soil_information_between_points(geo_stations, geo_sensors, geo_soil), 'soil_information',
+                         utils.get_root_dir() + '/model/data_prepared/')
+
+def update_meteocat_aca_dataframe():
+    # Merge all meteocat data
+    utils.save_df_to_csv(merge_all_meteocat_data(), 'meteocat_merged', utils.get_root_dir() + '/model/data_prepared/')
+
+    # Get final big DataFrame of aca and meteocat data
+    utils.save_df_to_csv(merge_all_meteocat_data_aca(), 'aca_meteocat_merged',
+                         utils.get_root_dir() + '/model/data_prepared/')
+
+
+
+"""
+---------------------------------------------------------------------------
+From this point, functions are used to prepare the data for the LSTM model
+---------------------------------------------------------------------------
+"""
 
 def nan_treatment(_df):
     """
@@ -265,11 +295,15 @@ def create_temporal_windows(_df, steps):
 
     return np.array(X), np.array(y)
 
+
+"""
+FINAL FUNCTION TO GET THE DATA PREPARED FOR THE LSTM MODEL
+"""
 def get_data_prepared(temporal_window, recalc_with_new_data = False, return_scaler = False):
+    # TODO --> Implement 2 scalers, one for the X and one for the y
     if recalc_with_new_data:
         # Update meteocat data and aca data and merge them
-        utils.save_df_to_csv(merge_all_meteocat_data(), 'meteocat_merged', utils.get_root_dir() + '/model/data_prepared/')
-        utils.save_df_to_csv(merge_all_meteocat_data_aca(), 'aca_meteocat_merged', utils.get_root_dir() + '/model/data_prepared/')
+        update_meteocat_aca_dataframe()
     # Read the final merged data
     df = pd.read_csv(utils.get_root_dir() + '/model/data_prepared/aca_meteocat_merged.csv')
     df = nan_treatment(df)
@@ -281,34 +315,5 @@ def get_data_prepared(temporal_window, recalc_with_new_data = False, return_scal
         return X, y
 
 
-####################################################################################################################################
-
-# TODO --> Crear una funció per actualitzar les dades de tot!
-
-# Create the distances file
-utils.save_df_to_csv(calc_distances(), 'distances', utils.get_root_dir() + '/model/data_prepared/')
-
-# Transform the distances file into a distance and soil types file
-geo_stations, geo_sensors, geo_soil = get_geodataframes()
-utils.save_df_to_csv(get_soil_information_between_points(geo_stations, geo_sensors, geo_soil), 'soil_information', utils.get_root_dir() + '/model/data_prepared/')
-
-
-# Merge all meteocat data
-utils.save_df_to_csv(merge_all_meteocat_data(), 'meteocat_merged', utils.get_root_dir() + '/model/data_prepared/')
-
-# Get final big DataFrame of aca and meteocat data
-utils.save_df_to_csv(merge_all_meteocat_data_aca(), 'aca_meteocat_merged', utils.get_root_dir() + '/model/data_prepared/')
-
-
-####################################################################################################################################
-
-# df = nan_treatment(get_merged_final_data_aca_meteocat())
-# print(df.head())
-# df_scaled, _ = scale_data(df)
-# print(df_scaled.head())
-
-# X, y = create_temporal_windows(df_scaled, 14)
-# print(X, y)
-
-# X, y = get_data_prepared()
+# X, y = get_data_prepared(10)
 # print(X, y)
