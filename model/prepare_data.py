@@ -7,6 +7,7 @@ from shapely.geometry import LineString
 from tqdm import tqdm
 from scipy.spatial import cKDTree
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.decomposition import PCA
 
 """
 This file is used to prepare the data for the LSTM model. 
@@ -253,17 +254,31 @@ def nan_treatment(_df):
     _df[aca_columns] = _df[aca_columns].interpolate(method='time').ffill().bfill()
     return _df
 
+def get_target_columns(_df):
+    """
+    Function to get the target columns of the dataframe
+    :param _df: dataframe to get the target columns
+    :return: list with the target columns
+    """
+    return [col for col in _df.columns if 'Embassament' in col]
+
 def scale_data(_df):
     """
     Function to scale the data using MinMaxScaler
     :param _df: dataframe to scale
     :return: DataFrame scaled and the scaler used
     """
-    scaler = MinMaxScaler()
-    _df_scaled = _df.copy()
-    _df_scaled[_df_scaled.columns] = scaler.fit_transform(_df_scaled[_df_scaled.columns])
-    return _df_scaled, scaler
-
+    # Split dataframe into X, y
+    target_columns = get_target_columns(_df)
+    X_scaler = MinMaxScaler()
+    y_scaler = MinMaxScaler()
+    _X = _df.drop(columns=target_columns).copy()
+    _y = _df[target_columns].copy()
+    _X[_X.columns] = X_scaler.fit_transform(_X[_X.columns])
+    _y[_y.columns] = y_scaler.fit_transform(_y[_y.columns])
+    _df_scaled = pd.concat([_X, _y], axis=1)
+    _df_scaled.columns = _df.columns
+    return _df_scaled, (X_scaler, y_scaler)
 
 def create_temporal_windows(_df, steps):
     """
@@ -280,7 +295,7 @@ def create_temporal_windows(_df, steps):
     """
     # Ensure DataFrame is sorted by time (if necessary)
     _df = _df.sort_index()
-    target_columns = [col for col in _df.columns if 'Embassament' in col]
+    target_columns = get_target_columns(_df)
 
     # Separate features and targets
     features = _df.drop(columns=target_columns).values
@@ -299,21 +314,22 @@ def create_temporal_windows(_df, steps):
 """
 FINAL FUNCTION TO GET THE DATA PREPARED FOR THE LSTM MODEL
 """
-def get_data_prepared(temporal_window, recalc_with_new_data = False, return_scaler = False):
-    # TODO --> Implement 2 scalers, one for the X and one for the y
+def get_data_prepared(data, temporal_window, recalc_with_new_data = False, return_scaler = False):
     if recalc_with_new_data:
         # Update meteocat data and aca data and merge them
         update_meteocat_aca_dataframe()
     # Read the final merged data
-    df = pd.read_csv(utils.get_root_dir() + '/model/data_prepared/aca_meteocat_merged.csv')
+    if data == 'meteocat_aca':
+        df = pd.read_csv(utils.get_root_dir() + '/model/data_prepared/aca_meteocat_merged.csv')
+    elif data == 'meteocat_data_icgc':
+        df = ""
+        pass
+    else:
+        raise ValueError("Data must be 'meteocat_aca' or 'meteocat_data_icgc'")
     df = nan_treatment(df)
-    df_scaled, _ = scale_data(df)
+    df_scaled, scalers = scale_data(df)
     X, y = create_temporal_windows(df_scaled, temporal_window)
     if return_scaler:
-        return X, y, _
+        return X, y, scalers
     else:
         return X, y
-
-
-# X, y = get_data_prepared(10)
-# print(X, y)

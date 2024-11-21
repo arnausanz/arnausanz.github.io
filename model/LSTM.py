@@ -170,13 +170,3 @@ for i in range(y_test.shape[1]):
     plt.ylabel("Scaled Volume")
     plt.legend()
     plt.show()
-
-# TODO --> Separate into X and y scaler
-"""
-y_test_original = scaler_y.inverse_transform(y_test)
-y_pred_original = scaler_y.inverse_transform(y_pred)
-
-# Example metric in original scale
-mae_original = mean_absolute_error(y_test_original, y_pred_original)
-print(f"MAE in Original Scale: {mae_original:.4f}")
-"""
