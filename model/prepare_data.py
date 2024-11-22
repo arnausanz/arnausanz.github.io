@@ -1,13 +1,12 @@
 import pandas as pd
 import numpy as np
 from geopy.distance import geodesic
-import DataExtraction.utils as utils
+from DataExtraction import utils
 import geopandas as gpd
 from shapely.geometry import LineString
 from tqdm import tqdm
 from scipy.spatial import cKDTree
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.decomposition import PCA
 
 """
 This file is used to prepare the data for the LSTM model. 
@@ -309,7 +308,6 @@ def create_temporal_windows(_df, steps):
         y.append(targets[i + steps])  # Target corresponds to the end of the window
 
     return np.array(X), np.array(y)
-
 
 """
 FINAL FUNCTION TO GET THE DATA PREPARED FOR THE LSTM MODEL
