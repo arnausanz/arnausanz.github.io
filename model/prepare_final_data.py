@@ -91,6 +91,7 @@ def prepare_icgc_data(save = True):
                 pbar.update(1)
     # Create a DataFrame from the soil_info list
     final_df = pd.DataFrame(soil_info)
+    # TODO --> Drop emppty columns
     if save:
         final_df.to_csv(final_data_dir_path + 'processed_icgc.csv', index=False)
     return final_df
