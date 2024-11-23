@@ -7,6 +7,7 @@ from tqdm import tqdm
 from DataExtraction import utils
 import pandas as pd
 from sklearn.decomposition import PCA
+from sklearn.preprocessing import MinMaxScaler
 import matplotlib.pyplot as plt
 
 
@@ -177,7 +178,6 @@ def update_data(save = True, with_icgc = False):
     prepare_icgc_data(save) if with_icgc else None
     print('Data updated successfully')
     # Merge data to get the final dataframe format for the model
-    # Columns: date, sensor_code, station_code, 1000, 1300, 1600, pca_1, pca_2, pca_3, pca_4, pca_5, current_volume
     processed_aca = pd.read_csv(final_data_dir_path + 'processed_aca.csv')
     processed_meteocat = pd.read_csv(final_data_dir_path + 'processed_meteocat.csv')
     processed_icgc = pd.read_csv(final_data_dir_path + 'processed_icgc.csv') if with_icgc else None
@@ -187,9 +187,30 @@ def update_data(save = True, with_icgc = False):
     if save:
         final_data.to_csv(final_data_dir_path + 'final_data.csv', index=False)
 
-def get_data(update = False, save = True, with_icgc = False):
+def _get_data(update = False, save = True, with_icgc = False):
     if update:
         update_data(save, with_icgc)
     data = pd.read_csv(final_data_dir_path + 'final_data.csv')
     data['date'] = pd.to_datetime(data['date'], format='%Y-%m-%d')
     return data
+
+def get_data(window_size, update = False, save = True, with_icgc = False):
+    data = _get_data(update, save, with_icgc).set_index('date')
+    # Split the data into X and y
+    y_columns = ['0', '1', '2', '3', '4', '5', '6', '7', '8']
+    X = data.drop(columns=y_columns)
+    y = data[y_columns]
+    # Create the sequences
+    X_seq = []
+    y_seq = []
+    for i in range(len(X) - window_size):
+        X_seq.append(X.iloc[i:i + window_size].values)
+        y_seq.append(y.iloc[i + window_size].values)
+    X_seq = np.array(X_seq)
+    y_seq = np.array(y_seq)
+    # Scale the data with MinMaxScaler for each sequence individually
+    x_scaler = MinMaxScaler()
+    y_scaler = MinMaxScaler()
+    X_seq = x_scaler.fit_transform(X_seq.reshape(-1, X_seq.shape[-1])).reshape(X_seq.shape)
+    y_seq = y_scaler.fit_transform(y_seq)
+    return X_seq, y_seq, (x_scaler, y_scaler)
