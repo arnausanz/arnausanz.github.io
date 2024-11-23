@@ -91,13 +91,13 @@ class ReservoirLSTM(nn.Module):
         return training_losses
 
 
-X, y = get_data_prepared(temporal_window=180)
+X, y = get_data_prepared(temporal_window=25)
 
 # Define parameters
 input_dim = X.shape[2]  # Number of features (from your data preparation)
-hidden_dim = 128         # Number of hidden units in the LSTM
+hidden_dim = 64         # Number of hidden units in the LSTM
 output_dim = y.shape[1] # Number of reservoirs (targets)
-num_layers = 3          # Number of LSTM layers
+num_layers = 2          # Number of LSTM layers
 
 # Initialize the model
 model = ReservoirLSTM(input_dim=input_dim, hidden_dim=hidden_dim, output_dim=output_dim, num_layers=num_layers)
@@ -122,7 +122,7 @@ criterion = nn.MSELoss()  # Mean Squared Error for regression
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
 # Training loop
-num_epochs = 75
+num_epochs = 15
 batch_size = 32
 
 # Create DataLoader

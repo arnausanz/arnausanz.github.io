@@ -314,18 +314,11 @@ def create_temporal_windows(_df, steps):
 """
 FINAL FUNCTION TO GET THE DATA PREPARED FOR THE LSTM MODEL
 """
-def get_data_prepared(data, temporal_window, recalc_with_new_data = False, return_scaler = False):
+def get_data_prepared(temporal_window, recalc_with_new_data = False, return_scaler = False):
     if recalc_with_new_data:
         # Update meteocat data and aca data and merge them
         update_meteocat_aca_dataframe()
-    # Read the final merged data
-    if data == 'meteocat_aca':
-        df = pd.read_csv(utils.get_root_dir() + '/model/data_prepared/aca_meteocat_merged.csv')
-    elif data == 'meteocat_data_icgc':
-        df = ""
-        pass
-    else:
-        raise ValueError("Data must be 'meteocat_aca' or 'meteocat_data_icgc'")
+    df = pd.read_csv(utils.get_root_dir() + '/model/data_prepared/aca_meteocat_merged.csv')
     df = nan_treatment(df)
     df_scaled, scalers = scale_data(df)
     X, y = create_temporal_windows(df_scaled, temporal_window)
