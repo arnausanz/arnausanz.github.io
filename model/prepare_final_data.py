@@ -202,17 +202,11 @@ def update_data(save = True, update_aca = True, update_meteocat = True, update_i
 def get_data(update = False, save = True, update_aca = True, update_meteocat = True, update_icgc = False):
     if update:
         update_data(save, update_aca, update_meteocat, update_icgc)
-    return pd.read_csv(final_data_dir_path + 'final_data.csv')
-
-get_data(update=True, update_icgc=True)
-
-
-
-
-
-
-
-
+    data = pd.read_csv(final_data_dir_path + 'final_data.csv')
+    data['sensor_code'] = data['sensor_code'].astype('int64')
+    data['station_code'] = data['station_code'].astype('int64')
+    data['date'] = pd.to_datetime(data['date'], format='%Y-%m-%d')
+    return data
 
 
 

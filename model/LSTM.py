@@ -1,172 +1,132 @@
+from torch.utils.data import Dataset
 import torch
-import torch.nn as nn
-from prepare_data import get_data_prepared
-from sklearn.metrics import mean_absolute_error, mean_squared_error
 import numpy as np
-import matplotlib.pyplot as plt
 
+class DynamicSensorDataset(Dataset):
+    def __init__(self, data, window_size, target_col='current_volume'):
+        self.data = data
+        self.window_size = window_size
+        self.target_col = target_col
 
-class ReservoirLSTM(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim, num_layers=1):
-        """
-        LSTM model for predicting reservoir volumes.
+    def __len__(self):
+        return len(self.data)
 
-        Parameters:
-        - input_dim (int): Number of input features per timestep.
-        - hidden_dim (int): Number of hidden units in the LSTM.
-        - output_dim (int): Number of output targets (reservoirs).
-        - num_layers (int): Number of LSTM layers. Default is 1.
-        """
-        super(ReservoirLSTM, self).__init__()
-        self.lstm = nn.LSTM(input_dim, hidden_dim, num_layers, batch_first=True, dropout=0.2)
-        self.dropout = nn.Dropout(0.2)
-        self.fc = nn.Linear(hidden_dim, output_dim)
+    def __getitem__(self, idx):
+        X_categorical = self.data.iloc[idx][['sensor_code', 'station_code']].values.astype(int)
+        X_numerical = self._get_window_data(idx).astype(np.float32)
+        y = self.data.iloc[idx][self.target_col].astype(np.float32)
 
-    def forward(self, x):
-        """
-        Forward pass for the model.
+        return torch.tensor(X_categorical, dtype=torch.long), torch.tensor(X_numerical, dtype=torch.float32), torch.tensor(y, dtype=torch.float32)
 
-        Parameters:
-        - x (torch.Tensor): Input tensor of shape (batch_size, seq_len, input_dim).
+    def _get_window_data(self, idx):
+        start_idx = max(0, idx - self.window_size + 1)
+        window_data = self.data.iloc[start_idx:idx + 1][['1000', '1300', '1600']].values.flatten()
+        other_vars = self.data.iloc[idx].drop(['date', 'sensor_code', 'station_code', 'current_volume', '1000', '1300', '1600']).values
+        combined = np.concatenate([window_data, other_vars])
+        return combined
 
-        Returns:
-        - torch.Tensor: Output tensor of shape (batch_size, output_dim).
-        """
-        # LSTM forward pass
-        lstm_out, _ = self.lstm(x)  # lstm_out: (batch_size, seq_len, hidden_dim)
-        lstm_out = self.dropout(lstm_out)
-        last_timestep = lstm_out[:, -1, :]  # Use output of the last timestep
-        output = self.fc(last_timestep)  # Fully connected layer for prediction
+def create_sliding_windows(data, window_size):
+    dataset = DynamicSensorDataset(data, window_size)
+    return dataset
+
+from sklearn.model_selection import train_test_split
+import prepare_final_data
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader
+
+# Load your data
+data = prepare_final_data.get_data()
+data = data.iloc[-13920:]
+
+print('Data Loaded')
+
+train_size = int(0.9 * len(data))
+train_data = data[:train_size]
+test_data = data[train_size:]
+
+# Create datasets
+window_size = 1
+
+train_dataset = create_sliding_windows(train_data, window_size)
+test_dataset = create_sliding_windows(test_data, window_size)
+
+print("Defining the DataLoader")
+
+train_loader = DataLoader(train_dataset, batch_size=32)
+test_loader = DataLoader(test_dataset, batch_size=32)
+
+# Define the model
+class SensorModel(nn.Module):
+    def __init__(self, n_sensors, n_stations, embedding_dim, numerical_dim, lstm_hidden_dim, output_dim):
+        super(SensorModel, self).__init__()
+        self.sensor_embedding = nn.Embedding(n_sensors, embedding_dim)
+        self.station_embedding = nn.Embedding(n_stations, embedding_dim)
+        self.lstm = nn.LSTM(embedding_dim * 2 + numerical_dim, lstm_hidden_dim, batch_first=True)
+        self.fc = nn.Linear(lstm_hidden_dim, output_dim)
+
+    def forward(self, X_categorical, X_numerical):
+        sensor_embedded = self.sensor_embedding(X_categorical[:, 0])
+        station_embedded = self.station_embedding(X_categorical[:, 1])
+        combined = torch.cat((sensor_embedded, station_embedded, X_numerical), dim=1)
+        combined = combined.unsqueeze(1)  # Add sequence dimension
+        lstm_out, _ = self.lstm(combined)
+        output = self.fc(lstm_out[:, -1, :])
         return output
 
-    def save_model(self, path):
-        """
-        Save the model to a file.
+n_sensors = 9
+n_stations = 174
+embedding_dim = 4
+numerical_dim = window_size * 3 + 4
+lstm_hidden_dim = 32
+output_dim = 1
 
-        Parameters:
-        - path (str): File path to save the model.
-        """
-        torch.save(self.state_dict(), path)
-
-    def model_train(self, X_train, y_train, num_epochs=100, batch_size=32, lr=0.001, verbose=True, criterion=nn.MSELoss(), optimizer=torch.optim.Adam):
-        # TODO --> Implementar bé aquesta funció i fer els entrenaments a partir d'aquí
-        """
-        Train the model on the training data.
-
-        Parameters:
-        - X_train (torch.Tensor): Input training data.
-        - y_train (torch.Tensor): Target training data.
-        - num_epochs (int): Number of training epochs. Default is 100.
-        - batch_size (int): Batch size for training. Default is 32.
-        - lr (float): Learning rate for the optimizer. Default is 0.001.
-        - verbose (bool): Whether to print training loss. Default is True.
-        - criterion (torch.nn.Module): Loss function. Default is MSELoss.
-        - optimizer (torch.optim.Optimizer): Optimizer for training. Default is Adam.
-
-        Returns:
-        - list: Training losses for each epoch.
-        """
-        # Define DataLoader
-        dataset = TensorDataset(X_train, y_train)
-        dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
-
-        # Loss function and optimizer
-        optimizer = optimizer(self.parameters(), lr=lr)
-
-        # Training loop
-        training_losses = []
-        for epoch in range(num_epochs):
-            self.train()
-            epoch_loss = 0.0
-            for batch_X, batch_y in dataloader:
-                optimizer.zero_grad()
-                predictions = self(batch_X)
-                loss = criterion(predictions, batch_y)
-                loss.backward()
-                optimizer.step()
-                epoch_loss += loss.item()
-            if verbose:
-                print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {epoch_loss / len(dataloader):.4f}")
-            training_losses.append(epoch_loss / len(dataloader))
-        return training_losses
-
-
-X, y = get_data_prepared(temporal_window=25)
-
-# Define parameters
-input_dim = X.shape[2]  # Number of features (from your data preparation)
-hidden_dim = 64         # Number of hidden units in the LSTM
-output_dim = y.shape[1] # Number of reservoirs (targets)
-num_layers = 2          # Number of LSTM layers
-
-# Initialize the model
-model = ReservoirLSTM(input_dim=input_dim, hidden_dim=hidden_dim, output_dim=output_dim, num_layers=num_layers)
-print(model)
-
-
-
-# Sequential train-test split (e.g., 80% train, 20% test)
-train_size = int(0.8 * len(X))
-X_train, X_test = X[:train_size], X[train_size:]
-y_train, y_test = y[:train_size], y[train_size:]
-
-# Convert to PyTorch tensors
-X_train_tensor = torch.tensor(X_train, dtype=torch.float32)
-y_train_tensor = torch.tensor(y_train, dtype=torch.float32)
-X_test_tensor = torch.tensor(X_test, dtype=torch.float32)
-y_test_tensor = torch.tensor(y_test, dtype=torch.float32)
-
-
-# Loss function and optimizer
-criterion = nn.MSELoss()  # Mean Squared Error for regression
-optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-
-# Training loop
-num_epochs = 15
-batch_size = 32
-
-# Create DataLoader
-from torch.utils.data import DataLoader, TensorDataset
-
-dataset = TensorDataset(X_train_tensor, y_train_tensor)
-dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+model = SensorModel(n_sensors, n_stations, embedding_dim, numerical_dim, lstm_hidden_dim, output_dim)
 
 # Train the model
+criterion = nn.MSELoss()
+optimizer = optim.Adam(model.parameters(), lr=0.001)
+
+print("Training the model")
+
+num_epochs = 10
 for epoch in range(num_epochs):
     model.train()
-    epoch_loss = 0.0
-    for batch_X, batch_y in dataloader:
-        optimizer.zero_grad()  # Reset gradients
-        predictions = model(batch_X)  # Forward pass
-        loss = criterion(predictions, batch_y)  # Compute loss
-        loss.backward()  # Backpropagation
-        optimizer.step()  # Update weights
+    running_loss = 0.0
+    for X_categorical_batch, X_numerical_batch, y_batch in train_loader:
+        optimizer.zero_grad()
+        outputs = model(X_categorical_batch, X_numerical_batch)
+        loss = criterion(outputs.squeeze(), y_batch)
+        loss.backward()
+        optimizer.step()
+        running_loss += loss.item()
+    print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {running_loss/len(train_loader)}")
 
-        epoch_loss += loss.item()
+import matplotlib.pyplot as plt
 
-    print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {epoch_loss / len(dataloader):.4f}")
+# Set the model to evaluation mode
+model.eval()
 
+# Initialize dictionaries to store real and predicted values for each sensor
+real_values = {sensor: [] for sensor in range(9)}
+predicted_values = {sensor: [] for sensor in range(9)}
 
-# Evaluate the model
-model.eval()  # Set the model to evaluation mode
+# Disable gradient calculation for testing
 with torch.no_grad():
-    y_pred_tensor = model(X_test_tensor)  # Predictions
-    y_pred = y_pred_tensor.numpy()  # Convert to NumPy for evaluation
+    for X_categorical_batch, X_numerical_batch, y_batch in test_loader:
+        outputs = model(X_categorical_batch, X_numerical_batch)
+        for i in range(X_categorical_batch.size(0)):
+            sensor = X_categorical_batch[i, 0].item()
+            real_values[sensor].append(y_batch[i].item())
+            predicted_values[sensor].append(outputs[i].item())
 
-# Calculate metrics
-mae = mean_absolute_error(y_test, y_pred)
-rmse = np.sqrt(mean_squared_error(y_test, y_pred))
-
-print(f"Mean Absolute Error (MAE): {mae:.4f}")
-print(f"Root Mean Squared Error (RMSE): {rmse:.4f}")
-
-# Loop for all reservoir indexes and plot predictions vs. actual values
-for i in range(y_test.shape[1]):
-    plt.figure(figsize=(12, 6))
-    plt.plot(y_test[:, i], label='Actual', color='blue', alpha=0.6)
-    plt.plot(y_pred[:, i], label='Predicted', color='red', alpha=0.6)
-    plt.title(f"Predictions vs. Actuals for Reservoir {i + 1}")
-    plt.xlabel("Time Steps (Test Data)")
-    plt.ylabel("Scaled Volume")
+# Plot real vs. predicted values for each sensor
+for sensor in range(9):
+    plt.figure(figsize=(10, 6))
+    plt.plot(real_values[sensor], label='Real Values')
+    plt.plot(predicted_values[sensor], label='Predicted Values', alpha=0.7)
+    plt.xlabel('Sample Index')
+    plt.ylabel('Current Volume')
+    plt.title(f'Real vs. Predicted Values for Sensor {sensor}')
     plt.legend()
     plt.show()
