@@ -44,6 +44,8 @@ def prepare_aca_data(save = True):
     processed_aca.drop(columns='name', inplace=True)
     # Use ffills to fill missing values if there's any
     processed_aca.ffill(inplace=True)
+    # Keep a single row per day and one colum for each sensor
+    processed_aca = processed_aca.pivot(index='date', columns='sensor_code', values='current_volume').reset_index()
     if save:
         processed_aca.to_csv(final_data_dir_path + 'processed_aca.csv', index=False)
     return processed_aca
@@ -51,39 +53,38 @@ def prepare_aca_data(save = True):
 def prepare_meteocat_data(save = True):
     print('Preparing Meteocat data...')
     meteocat_1000 = pd.read_csv(_var_code_paths['1000'])
-    meteocat_1300 = pd.read_csv(_var_code_paths['1300'])
-    meteocat_1600 = pd.read_csv(_var_code_paths['1600'])
-    processed_meteocat = pd.concat([meteocat_1000, meteocat_1300, meteocat_1600])
-    processed_meteocat['data'] = pd.to_datetime(processed_meteocat['data'], format='%Y-%m-%d')
-    processed_meteocat.sort_values(by='data', inplace=True)
     # Drop all Z8 station data as it does not appear in the metadata
-    processed_meteocat = processed_meteocat[processed_meteocat['codiEstacio'] != 'Z8']
-    # Pivot the table to have the variables as columns
-    processed_meteocat = processed_meteocat.pivot(index=['data', 'codiEstacio'], columns='codiVariable', values='valor').reset_index()
-    # Create all day-station combination in case there are missing days for some stations
-    date_range = pd.date_range(start=processed_meteocat['data'].min(), end=processed_meteocat['data'].max())
-    # Drop stations with more than 50% missing days
-    station_to_keep = processed_meteocat.groupby('codiEstacio').size() / (len(date_range))
-    station_to_keep = station_to_keep[station_to_keep > 0.5].index
-    processed_meteocat = processed_meteocat[processed_meteocat['codiEstacio'].isin(station_to_keep)]
-    # Create a final dataframe with all the combinations of keeping stations and days
-    stations = processed_meteocat['codiEstacio'].unique()
-    all_combinations = pd.MultiIndex.from_product([date_range, stations], names=['data', 'codiEstacio'])
-    all_days_stations = pd.DataFrame(index=all_combinations).reset_index()
-    # Merge the all_days_stations with the processed_meteocat
-    processed_meteocat = pd.merge(all_days_stations, processed_meteocat, on=['data', 'codiEstacio'], how='left')
-    # Set codiEstacio as pd.Categorical and save the codes-names mapping into a new csv file
-    processed_meteocat['codiEstacio'] = pd.Categorical(processed_meteocat['codiEstacio'])
-    processed_meteocat['station_code'] = processed_meteocat['codiEstacio'].cat.codes
-    processed_meteocat[['station_code', 'codiEstacio']].drop_duplicates().to_csv(final_data_dir_path + 'station_codes.csv', index=False)
-    # Drop codiEstacio
-    processed_meteocat.drop(columns='codiEstacio', inplace=True)
-    # Fill missing values with the previous day value
+    meteocat_1000 = meteocat_1000[meteocat_1000['codiEstacio'] != 'Z8']
+    meteocat_1000 = meteocat_1000.pivot(index='data', columns='codiEstacio', values='valor').reset_index()
+    meteocat_1000.columns = ['date'] + [f'1000_{col}' for col in meteocat_1000.columns[1:]]
+    meteocat_1300 = pd.read_csv(_var_code_paths['1300'])
+    # Drop all Z8 station data as it does not appear in the metadata
+    meteocat_1300 = meteocat_1300[meteocat_1300['codiEstacio'] != 'Z8']
+    meteocat_1300 = meteocat_1300.pivot(index='data', columns='codiEstacio', values='valor').reset_index()
+    meteocat_1300.columns = ['date'] + [f'1300_{col}' for col in meteocat_1300.columns[1:]]
+    meteocat_1600 = pd.read_csv(_var_code_paths['1600'])
+    # Drop all Z8 station data as it does not appear in the metadata
+    meteocat_1600 = meteocat_1600[meteocat_1600['codiEstacio'] != 'Z8']
+    meteocat_1600 = meteocat_1600.pivot(index='data', columns='codiEstacio', values='valor').reset_index()
+    meteocat_1600.columns = ['date'] + [f'1600_{col}' for col in meteocat_1600.columns[1:]]
+    # Merge the three dataframes
+    processed_meteocat = pd.merge(meteocat_1000, meteocat_1300, on='date', how='outer')
+    processed_meteocat = pd.merge(processed_meteocat, meteocat_1600, on='date', how='outer')
+    processed_meteocat['date'] = pd.to_datetime(processed_meteocat['date'], format='%Y-%m-%d')
+    processed_meteocat.sort_values(by='date', inplace=True)
+    # Create missing days if there are any
+    date_range = pd.date_range(start=processed_meteocat['date'].min(), end=processed_meteocat['date'].max())
+    # Add missing days
+    processed_meteocat = processed_meteocat.set_index('date').reindex(date_range).reset_index()
+    # Rename index to date
+    processed_meteocat.rename(columns={'index': 'date'}, inplace=True)
+    # Drop columns with more than 50% of Nan values
+    processed_meteocat.dropna(thresh=0.75*len(processed_meteocat), axis=1, inplace=True)
+    # Fill nan values with the previous day value
     processed_meteocat.ffill(inplace=True)
     # Fill any remaining missing values with the next day value
     processed_meteocat.bfill(inplace=True)
-    # Reset index
-    processed_meteocat.reset_index(drop=True, inplace=True)
+    print(processed_meteocat.shape)
     if save:
         processed_meteocat.to_csv(final_data_dir_path + 'processed_meteocat.csv', index=False)
 
@@ -143,19 +144,7 @@ def prepare_icgc_data(save = True):
     final_df = pd.DataFrame(soil_info)
     # Drop colums with all 0 values
     final_df = final_df.loc[:, (final_df != 0).any(axis=0)]
-    # Use station and sensor codes from saved csv files
-    station_codes = pd.read_csv(final_data_dir_path + 'station_codes.csv')
-    sensor_codes = pd.read_csv(final_data_dir_path + 'sensor_codes.csv')
-    final_df = pd.merge(final_df, station_codes, left_on='station', right_on='codiEstacio', how='left')
-    final_df = pd.merge(final_df, sensor_codes, left_on='sensor', right_on='name', how='left')
-    final_df.drop(columns=['station', 'sensor', 'codiEstacio', 'name'], inplace=True)
-    # Drop rows with missing station or sensor codes (means that we dropped them earlier)
-    final_df.dropna(subset=['station_code', 'sensor_code'], inplace=True)
-    # Keep sensor and station codes as ints
-    final_df['station_code'] = final_df['station_code'].astype(int)
-    final_df['sensor_code'] = final_df['sensor_code'].astype(int)
-    # Set sensor and station codes as index to apply PCA
-    final_df.set_index(['sensor_code', 'station_code'], inplace=True)
+    final_df.set_index(['sensor', 'station'], inplace=True)
     """
     ###############################################
     To detect the best number of components in PCA
@@ -182,29 +171,25 @@ def prepare_icgc_data(save = True):
         final_df.to_csv(final_data_dir_path + 'processed_icgc.csv', index=False)
     return final_df
 
-def update_data(save = True, update_aca = True, update_meteocat = True, update_icgc = False):
-    prepare_aca_data(save) if update_aca else None
-    prepare_meteocat_data(save) if update_meteocat else None
-    prepare_icgc_data(save) if update_icgc else None
+def update_data(save = True, with_icgc = False):
+    prepare_aca_data(save)
+    prepare_meteocat_data(save)
+    prepare_icgc_data(save) if with_icgc else None
     print('Data updated successfully')
     # Merge data to get the final dataframe format for the model
     # Columns: date, sensor_code, station_code, 1000, 1300, 1600, pca_1, pca_2, pca_3, pca_4, pca_5, current_volume
     processed_aca = pd.read_csv(final_data_dir_path + 'processed_aca.csv')
     processed_meteocat = pd.read_csv(final_data_dir_path + 'processed_meteocat.csv')
-    processed_icgc = pd.read_csv(final_data_dir_path + 'processed_icgc.csv')
-    final_data = pd.merge(processed_aca, processed_meteocat, left_on='date', right_on='data', how='inner')
-    final_data.drop(columns='data', inplace=True)
-    final_data = pd.merge(final_data, processed_icgc, on=['sensor_code', 'station_code'], how='inner')
-    # Reorder columns
-    final_data = final_data[['date', 'sensor_code', 'station_code', '1000', '1300', '1600', 'pca_1', 'pca_2', 'pca_3', 'pca_4', 'current_volume']]
+    processed_icgc = pd.read_csv(final_data_dir_path + 'processed_icgc.csv') if with_icgc else None
+    final_data = pd.merge(processed_aca, processed_meteocat, on='date', how='inner')
+    if with_icgc:
+        final_data = pd.merge(final_data, processed_icgc, on=['sensor_code', 'station_code'], how='inner')
     if save:
         final_data.to_csv(final_data_dir_path + 'final_data.csv', index=False)
 
-def get_data(update = False, save = True, update_aca = True, update_meteocat = True, update_icgc = False):
+def get_data(update = False, save = True, with_icgc = False):
     if update:
-        update_data(save, update_aca, update_meteocat, update_icgc)
+        update_data(save, with_icgc)
     data = pd.read_csv(final_data_dir_path + 'final_data.csv')
-    data['sensor_code'] = data['sensor_code'].astype('int64')
-    data['station_code'] = data['station_code'].astype('int64')
     data['date'] = pd.to_datetime(data['date'], format='%Y-%m-%d')
     return data
