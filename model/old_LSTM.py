@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from data_prep import get_data
+from old_prepare_data import get_data_prepared
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 import numpy as np
 import matplotlib.pyplot as plt
@@ -91,12 +91,10 @@ class ReservoirLSTM(nn.Module):
         return training_losses
 
 
-data = get_data()
-# y columns = '0', '1', '2', '3', '4', '5', '6' , '7', '8'
-X, y = data.drop(columns=['0', '1', '2', '3', '4', '5', '6', '7', '8']), data[['0', '1', '2', '3', '4', '5', '6', '7', '8']]
+X, y = get_data_prepared(5)
 
 # Define parameters
-input_dim = X.shape[1]  # Number of features (from your data preparation)
+input_dim = X.shape[2]  # Number of features (from your data preparation)
 hidden_dim = 64         # Number of hidden units in the LSTM
 output_dim = y.shape[1] # Number of reservoirs (targets)
 num_layers = 2          # Number of LSTM layers
