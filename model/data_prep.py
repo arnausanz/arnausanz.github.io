@@ -213,4 +213,5 @@ def get_data(window_size, update = False, save = True, with_icgc = False):
     y_scaler = MinMaxScaler()
     X_seq = x_scaler.fit_transform(X_seq.reshape(-1, X_seq.shape[-1])).reshape(X_seq.shape)
     y_seq = y_scaler.fit_transform(y_seq)
+    print("Data prepared successfully")
     return X_seq, y_seq, (x_scaler, y_scaler)

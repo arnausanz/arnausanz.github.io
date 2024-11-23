@@ -44,8 +44,11 @@ print(y.shape)  # The output tensor's shape
 loss_fn = nn.MSELoss()  # Mean Squared Error Loss (for regression tasks)
 optimizer = Adam(xlstm_stack.parameters(), lr=0.001)  # Adam optimizer with learning rate 0.001
 
-x_train = torch.randn(100, 100, 64)
-y_train = torch.randn(100, 100, 64)
+x_train = torch.randn(100, 100, 65)
+y_train = torch.randn(100, 100, 65)
+
+print(x_train.shape)
+print(y_train.shape)
 
 # Create a DataLoader for batch processing
 train_data = TensorDataset(x_train, y_train)

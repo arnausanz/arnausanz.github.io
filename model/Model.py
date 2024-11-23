@@ -3,41 +3,56 @@ from torch.utils.data import DataLoader, TensorDataset
 import torch
 import data_prep
 import matplotlib.pyplot as plt
+from xlstm import xLSTMBlockStack
 
 
 class ModelConfig:
     def __init__(self, **kwargs):
-        self.model_type = kwargs.get('model_type', 'LSTM')
-        self.input_dim = kwargs.get('input_dim', 5)
-        self.hidden_dim = kwargs.get('hidden_dim', 64)
-        self.output_dim = kwargs.get('output_dim', 1)
-        self.num_layers = kwargs.get('num_layers', 2)
-        self.dropout = kwargs.get('dropout', 0.2)
-
+        self.model_type = kwargs.get('model_type', None)
+        self.input_dim = kwargs.get('input_dim', None)
+        self.hidden_dim = kwargs.get('hidden_dim', None)
+        self.output_dim = kwargs.get('output_dim', None)
+        self.num_layers = kwargs.get('num_layers', None)
+        self.dropout = kwargs.get('dropout', None)
+        self.xLSTM_config = kwargs.get('xLSTM_config', None)
+        self.device = kwargs.get('device', 'cpu')
 
 class Model(nn.Module):
     def __init__(self, model_config):
         super(Model, self).__init__()
         self.model_config = model_config
-        self.lstm = nn.LSTM(self.model_config.input_dim, self.model_config.hidden_dim, self.model_config.num_layers,
-                            batch_first=True, dropout=self.model_config.dropout)
-        self.dropout = nn.Dropout(self.model_config.dropout)
-        self.fc = nn.Linear(self.model_config.hidden_dim, self.model_config.output_dim)
+        self._build_model()
+
+    def _build_model(self):
+        if self.model_config.model_type == 'LSTM':
+            self.lstm = nn.LSTM(self.model_config.input_dim, self.model_config.hidden_dim, self.model_config.num_layers, batch_first=True, dropout=self.model_config.dropout)
+            self.dropout = nn.Dropout(self.model_config.dropout)
+            self.fc = nn.Linear(self.model_config.hidden_dim, self.model_config.output_dim)
+        elif self.model_config.model_type == 'xLSTM':
+            self.xlstm_stack = xLSTMBlockStack(self.model_config.xLSTM_config).to(self.model_config.device)
+            self.fc = nn.Linear(self.model_config.xLSTM_config.embedding_dim, self.model_config.output_dim)  # Map to 9 output dimensions
 
     def forward(self, x):
-        lstm_out, _ = self.lstm(x)
-        lstm_out = self.dropout(lstm_out[:, -1, :])  # Take the last output of the LSTM
-        output = self.fc(lstm_out)
-        return output
+        if self.model_config.model_type == 'LSTM':
+            lstm_out, _ = self.lstm(x)
+            lstm_out = self.dropout(lstm_out[:, -1, :])  # Take the last output of the LSTM
+            output = self.fc(lstm_out)
+            return output
+        elif self.model_config.model_type == 'xLSTM':
+            xlstm_out = self.xlstm_stack(x)
+            xlstm_out = xlstm_out[:, -1, :]
+            output = self.fc(xlstm_out)
+            return output
 
-    def model_train(self, X_train, y_train, num_epochs=100, batch_size=32, lr=0.001, verbose=True,
-                    criterion=nn.MSELoss(), optimizer=torch.optim.Adam):
+    def model_train(self, X_train, y_train, num_epochs=100, batch_size=32, lr=0.001, verbose=True, criterion=nn.MSELoss(), optimizer=torch.optim.Adam):
         # Convert to PyTorch tensors
-        X_train_tensor = torch.tensor(X_train, dtype=torch.float32)
-        y_train_tensor = torch.tensor(y_train, dtype=torch.float32)
+        X_train_tensor = torch.tensor(X_train, dtype=torch.float32).to(self.model_config.device)
+        y_train_tensor = torch.tensor(y_train, dtype=torch.float32).to(self.model_config.device)
+
+        print('Training the model...')
 
         train_data = TensorDataset(X_train_tensor, y_train_tensor)
-        train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
+        train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=False)
         optimizer = optimizer(self.parameters(), lr=lr)
         for epoch in range(num_epochs):
             self.train()
@@ -54,8 +69,10 @@ class Model(nn.Module):
         return self
 
     def model_test(self, X_test, y_test):
+        print('Testing the model...')
         X_test_tensor = torch.tensor(X_test, dtype=torch.float32)
         y_test_tensor = torch.tensor(y_test, dtype=torch.float32)
+
         test_data = TensorDataset(X_test_tensor, y_test_tensor)
         test_loader = DataLoader(test_data, batch_size=1, shuffle=False)
         self.eval()
@@ -73,18 +90,3 @@ class Model(nn.Module):
             plt.legend()
             plt.show()
         return test_loss
-
-
-X, y, scalers = data_prep.get_data(30)
-
-# Split the data into training and testing sets
-train_size = int(0.8 * len(X))
-X_train, X_test = X[:train_size], X[train_size:]
-y_train, y_test = y[:train_size], y[train_size:]
-
-model_config = ModelConfig(model_type='LSTM', input_dim=X.shape[2], output_dim=y.shape[1], num_layers=3, hidden_dim=128,
-                           dropout=0.2)
-
-model = Model(model_config)
-model.model_train(X_train, y_train, num_epochs=15, batch_size=32, lr=0.001)
-test_loss = model.model_test(X_test, y_test)
