@@ -173,6 +173,8 @@ def prepare_icgc_data(save = True):
     # Apply PCA with 4 components (elbow technique)
     pca = PCA(n_components=4)
     final_df = pd.DataFrame(pca.fit_transform(final_df), index=final_df.index)
+    # Rename pca columns
+    final_df.columns = [f'pca_{i + 1}' for i in range(4)]
     # Reset index
     final_df.reset_index(inplace=True)
     if save:
