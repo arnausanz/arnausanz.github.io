@@ -1,5 +1,5 @@
-from Model import Model, ModelConfig
-from data_prep import get_data
+from model.Model import Model, ModelConfig
+from model.data_prep import get_data
 
 X, y, scalers = get_data(180)
 
