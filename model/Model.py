@@ -8,6 +8,7 @@ from tqdm import tqdm
 
 
 class ModelConfig:
+    # TODO --> Eliminar això i simplement fer dues classes separades per a cada model que heretin de Model
     def __init__(self, **kwargs):
         self.model_type = kwargs.get('model_type', None)
         self.input_dim = kwargs.get('input_dim', None)
@@ -97,3 +98,19 @@ class Model(nn.Module):
             plt.legend()
             plt.show()
         return test_loss
+
+    def save_training(self):
+        # TODO --> Implement
+        pass
+
+    def save_testing(self):
+        # TODO --> Implement
+        pass
+
+    def save_model(self):
+        # TODO --> Implement
+        pass
+
+    def load_model(self):
+        # TODO --> Implement
+        pass

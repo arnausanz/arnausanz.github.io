@@ -4,5 +4,14 @@
   "settings": {
     "python.defaultInterpreterPath": "/usr/local/bin/python3.9"
   },
-  "postCreateCommand": "pip install --upgrade pip"
+  "postCreateCommand": "pip install --upgrade pip",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.env.linux": {
+          "PYTHONPATH": "${workspaceFolder}"
+        }
+      }
+    }
+  }
 }
