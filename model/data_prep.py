@@ -10,7 +10,6 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import MinMaxScaler
 import matplotlib.pyplot as plt
 
-
 _var_code_paths = {
     'aca': utils.get_root_dir() + '/data/processed/aca/aca_daily_all.csv',
     '1300': utils.get_root_dir() + '/data/processed/meteocat/meteocat_1300_daily_all.csv',
@@ -23,7 +22,8 @@ _var_code_paths = {
 
 final_data_dir_path = utils.get_root_dir() + '/model/final_data/'
 
-def prepare_aca_data(save = True):
+
+def prepare_aca_data(save=True):
     """
     Prepares the final ACA data for the model.
     :return: DataFrame with the final ACA data
@@ -40,7 +40,8 @@ def prepare_aca_data(save = True):
     # Set name as pd.Categorical and save the codes-names mapping into a new csv file
     processed_aca['name'] = pd.Categorical(processed_aca['name'])
     processed_aca['sensor_code'] = processed_aca['name'].cat.codes
-    processed_aca[['sensor_code', 'name']].drop_duplicates().to_csv(final_data_dir_path + 'sensor_codes.csv', index=False)
+    processed_aca[['sensor_code', 'name']].drop_duplicates().to_csv(final_data_dir_path + 'sensor_codes.csv',
+                                                                    index=False)
     # Drop name
     processed_aca.drop(columns='name', inplace=True)
     # Use ffills to fill missing values if there's any
@@ -51,7 +52,8 @@ def prepare_aca_data(save = True):
         processed_aca.to_csv(final_data_dir_path + 'processed_aca.csv', index=False)
     return processed_aca
 
-def prepare_meteocat_data(save = True):
+
+def prepare_meteocat_data(save=True):
     print('Preparing Meteocat data...')
     meteocat_1000 = pd.read_csv(_var_code_paths['1000'])
     # Drop all Z8 station data as it does not appear in the metadata
@@ -80,7 +82,7 @@ def prepare_meteocat_data(save = True):
     # Rename index to date
     processed_meteocat.rename(columns={'index': 'date'}, inplace=True)
     # Drop columns with more than 50% of Nan values
-    processed_meteocat.dropna(thresh=0.75*len(processed_meteocat), axis=1, inplace=True)
+    processed_meteocat.dropna(thresh=0.75 * len(processed_meteocat), axis=1, inplace=True)
     # Fill nan values with the previous day value
     processed_meteocat.ffill(inplace=True)
     # Fill any remaining missing values with the next day value
@@ -89,7 +91,8 @@ def prepare_meteocat_data(save = True):
     if save:
         processed_meteocat.to_csv(final_data_dir_path + 'processed_meteocat.csv', index=False)
 
-def prepare_icgc_data(save = True):
+
+def prepare_icgc_data(save=True):
     """
     Prepares the final ICGC data for the model.
     :return: DataFrame with the final ICGC data
@@ -101,13 +104,20 @@ def prepare_icgc_data(save = True):
     aca_metadata = pd.read_csv(_var_code_paths['aca_metadata'])[['name', 'latitude', 'longitude']].drop_duplicates()
     # Get geodataframes of icgc, meteo and aca
     crs = 'EPSG:4326'
-    _geo_stations = gpd.GeoDataFrame(meteocat_metadata, geometry=gpd.points_from_xy(meteocat_metadata['coordenades.longitud'],meteocat_metadata['coordenades.latitud']), crs=crs).to_crs(epsg=3857)
-    _geo_sensors = gpd.GeoDataFrame(aca_metadata, geometry=gpd.points_from_xy(aca_metadata['longitude'], aca_metadata['latitude']), crs=crs).to_crs(epsg=3857)
-    _geo_soil = gpd.GeoDataFrame(processed_icgc, geometry=gpd.points_from_xy(processed_icgc['Longitude'], processed_icgc['Latitude']), crs=crs).to_crs(epsg=3857)
+    _geo_stations = gpd.GeoDataFrame(meteocat_metadata,
+                                     geometry=gpd.points_from_xy(meteocat_metadata['coordenades.longitud'],
+                                                                 meteocat_metadata['coordenades.latitud']),
+                                     crs=crs).to_crs(epsg=3857)
+    _geo_sensors = gpd.GeoDataFrame(aca_metadata,
+                                    geometry=gpd.points_from_xy(aca_metadata['longitude'], aca_metadata['latitude']),
+                                    crs=crs).to_crs(epsg=3857)
+    _geo_soil = gpd.GeoDataFrame(processed_icgc,
+                                 geometry=gpd.points_from_xy(processed_icgc['Longitude'], processed_icgc['Latitude']),
+                                 crs=crs).to_crs(epsg=3857)
     soil_tree = cKDTree(np.vstack([_geo_soil.geometry.x, _geo_soil.geometry.y]).T)
     soil_info = []
     # Use a progress bar to track the processing
-    with tqdm(total=_geo_sensors.shape[0]*_geo_stations.shape[0], desc="Processing sensors") as pbar:
+    with tqdm(total=_geo_sensors.shape[0] * _geo_stations.shape[0], desc="Processing sensors") as pbar:
         for _, sensor in _geo_sensors.iterrows():
             for _, station in _geo_stations.iterrows():
                 # Get the line between the sensor and the station
@@ -116,9 +126,9 @@ def prepare_icgc_data(save = True):
                 distance = geodesic((sensor['latitude'], sensor['longitude']),
                                     (station['coordenades.latitud'], station['coordenades.longitud'])).km
                 # Interpolate points along the line
-                num_points = int(distance * 10) # Calculate 10 points per km
+                num_points = int(distance * 10)  # Calculate 10 points per km
                 if num_points == 0:
-                    num_points = 1 # If a sensor is too close to a station, we still want to get some information
+                    num_points = 1  # If a sensor is too close to a station, we still want to get some information
                 interpolated_points = [line.interpolate(i / num_points, normalized=True) for i in range(num_points + 1)]
                 # Find the nearest soil type for each interpolated point
                 soil_types = []
@@ -172,7 +182,8 @@ def prepare_icgc_data(save = True):
         final_df.to_csv(final_data_dir_path + 'processed_icgc.csv', index=False)
     return final_df
 
-def update_data(save = True, with_icgc = False):
+
+def update_data(save=True, with_icgc=False):
     prepare_aca_data(save)
     prepare_meteocat_data(save)
     prepare_icgc_data(save) if with_icgc else None
@@ -187,14 +198,16 @@ def update_data(save = True, with_icgc = False):
     if save:
         final_data.to_csv(final_data_dir_path + 'final_data.csv', index=False)
 
-def _get_data(update = False, save = True, with_icgc = False):
+
+def _get_data(update=False, save=True, with_icgc=False):
     if update:
         update_data(save, with_icgc)
     data = pd.read_csv(final_data_dir_path + 'final_data.csv')
     data['date'] = pd.to_datetime(data['date'], format='%Y-%m-%d')
     return data
 
-def get_data(window_size, update = False, save = True, with_icgc = False):
+
+def get_data(window_size, using_target_windows = False, update=False, save=True, with_icgc=False):
     data = _get_data(update, save, with_icgc).set_index('date')
     # Split the data into X and y
     y_columns = ['0', '1', '2', '3', '4', '5', '6', '7', '8']
@@ -204,8 +217,13 @@ def get_data(window_size, update = False, save = True, with_icgc = False):
     X_seq = []
     y_seq = []
     for i in range(len(X) - window_size):
-        X_seq.append(X.iloc[i:i + window_size].values)
-        y_seq.append(y.iloc[i + window_size].values)
+        if using_target_windows:
+            _X = X.iloc[i:i + window_size]
+            past_y = y.iloc[i:i + window_size - 1].values
+            X_seq.append(np.hstack([_X[:-1], past_y]))
+        else:
+            X_seq.append(X.iloc[i:i + window_size].values)
+        y_seq.append(y.iloc[i + window_size - 1].values)
     X_seq = np.array(X_seq)
     y_seq = np.array(y_seq)
     # Scale the data with MinMaxScaler for each sequence individually
@@ -215,3 +233,51 @@ def get_data(window_size, update = False, save = True, with_icgc = False):
     y_seq = y_scaler.fit_transform(y_seq)
     print("Data prepared successfully")
     return X_seq, y_seq, (x_scaler, y_scaler)
+
+def get_data_x(window_size, num_subwindows, using_target_windows = False, update=False, save=True, with_icgc=False):
+    data = _get_data(update, save, with_icgc).set_index('date')
+    # Split the data into X and y
+    y_columns = ['0', '1', '2', '3', '4', '5', '6', '7', '8']
+    X = data.drop(columns=y_columns)
+    y = data[y_columns]
+    # Create the sequences
+    X_seq = []
+    y_seq = []
+    subwindow_size = window_size // num_subwindows
+    for i in range(len(X) - window_size):
+        subwindows = []
+        for j in range(num_subwindows):
+            start = i + j * subwindow_size
+            end = start + subwindow_size
+            subwindow_x = X.iloc[start:end]
+            subwindow_y = y.iloc[start:end - 1] if using_target_windows else None
+
+            # Create subwindow features
+            subwindow_features = np.hstack([
+                subwindow_x.mean(axis=0),
+                subwindow_x.std(axis=0),
+                subwindow_x.min(axis=0),
+                subwindow_x.max(axis=0)
+            ]) if not using_target_windows else np.hstack([
+                subwindow_x.mean(axis=0),
+                subwindow_x.std(axis=0),
+                subwindow_x.min(axis=0),
+                subwindow_x.max(axis=0),
+                subwindow_y.mean(axis=0),
+                subwindow_y.std(axis=0),
+                subwindow_y.min(axis=0),
+                subwindow_y.max(axis=0)
+            ])
+            subwindows.append(subwindow_features)
+        X_seq.append(subwindows)
+        y_seq.append(y.iloc[i + window_size - 1])
+    X_seq = np.array(X_seq)
+    y_seq = np.array(y_seq)
+    # Scale the data with MinMaxScaler for each sequence individually
+    x_scaler = MinMaxScaler()
+    y_scaler = MinMaxScaler()
+    X_seq = x_scaler.fit_transform(X_seq.reshape(-1, X_seq.shape[-1])).reshape(X_seq.shape)
+    y_seq = y_scaler.fit_transform(y_seq)
+    print("Data prepared successfully")
+    return X_seq, y_seq, (x_scaler, y_scaler)
+
