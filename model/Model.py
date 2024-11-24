@@ -4,6 +4,7 @@ import torch
 import data_prep
 import matplotlib.pyplot as plt
 from xlstm import xLSTMBlockStack
+from tqdm import tqdm
 
 
 class ModelConfig:
@@ -15,7 +16,6 @@ class ModelConfig:
         self.num_layers = kwargs.get('num_layers', None)
         self.dropout = kwargs.get('dropout', None)
         self.xLSTM_config = kwargs.get('xLSTM_config', None)
-        self.device = kwargs.get('device', 'cpu')
 
 class Model(nn.Module):
     def __init__(self, model_config):
@@ -29,7 +29,7 @@ class Model(nn.Module):
             self.dropout = nn.Dropout(self.model_config.dropout)
             self.fc = nn.Linear(self.model_config.hidden_dim, self.model_config.output_dim)
         elif self.model_config.model_type == 'xLSTM':
-            self.xlstm_stack = xLSTMBlockStack(self.model_config.xLSTM_config).to(self.model_config.device)
+            self.xlstm_stack = xLSTMBlockStack(self.model_config.xLSTM_config)
             self.fc = nn.Linear(self.model_config.xLSTM_config.embedding_dim, self.model_config.output_dim)  # Map to 9 output dimensions
 
     def forward(self, x):
@@ -46,8 +46,11 @@ class Model(nn.Module):
 
     def model_train(self, X_train, y_train, num_epochs=100, batch_size=32, lr=0.001, verbose=True, criterion=nn.MSELoss(), optimizer=torch.optim.Adam):
         # Convert to PyTorch tensors
-        X_train_tensor = torch.tensor(X_train, dtype=torch.float32).to(self.model_config.device)
-        y_train_tensor = torch.tensor(y_train, dtype=torch.float32).to(self.model_config.device)
+        X_train_tensor = torch.tensor(X_train, dtype=torch.float32)
+        y_train_tensor = torch.tensor(y_train, dtype=torch.float32)
+
+        print('X_train_tensor shape:', X_train_tensor.shape)
+        print('y_train_tensor shape:', y_train_tensor.shape)
 
         print('Training the model...')
 
@@ -57,13 +60,17 @@ class Model(nn.Module):
         for epoch in range(num_epochs):
             self.train()
             running_loss = 0.0
-            for batch_idx, (x_batch, y_batch) in enumerate(train_loader):
+            progress_bar = tqdm(enumerate(train_loader), total=len(train_loader),
+                                desc=f'Epoch {epoch + 1}/{num_epochs}')
+            for batch_idx, (x_batch, y_batch) in progress_bar:
                 optimizer.zero_grad()
                 output = self.forward(x_batch)
                 loss = criterion(output, y_batch)
                 loss.backward()
                 optimizer.step()
                 running_loss += loss.item()
+                progress_bar.set_postfix(loss=running_loss/(batch_idx+1))
+            progress_bar.close()
             if verbose:
                 print(f'Epoch {epoch + 1}, Loss: {running_loss}')
         return self

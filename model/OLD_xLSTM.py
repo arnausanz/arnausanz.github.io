@@ -29,23 +29,23 @@ cfg = xLSTMBlockStackConfig(
     ),
     context_length=100,
     num_blocks=7,
-    embedding_dim=64,
+    embedding_dim=1032,
     slstm_at=[1],
 
 )
 
 xlstm_stack = xLSTMBlockStack(cfg)
 
-x = torch.randn(4, 100, 64).to("cpu")  # Example input of batch size 4, sequence length 256, and feature dimension 128
-xlstm_stack = xlstm_stack.to("cpu")  # Move the model to the same device as the input
-y = xlstm_stack(x)  # Forward pass
-print(y.shape)  # The output tensor's shape
+#x = torch.randn(4, 100, 64).to("cpu")  # Example input of batch size 4, sequence length 256, and feature dimension 128
+#xlstm_stack = xlstm_stack.to("cpu")  # Move the model to the same device as the input
+#y = xlstm_stack(x)  # Forward pass
+#print(y.shape)  # The output tensor's shape
 
 loss_fn = nn.MSELoss()  # Mean Squared Error Loss (for regression tasks)
 optimizer = Adam(xlstm_stack.parameters(), lr=0.001)  # Adam optimizer with learning rate 0.001
 
-x_train = torch.randn(100, 100, 65)
-y_train = torch.randn(100, 100, 65)
+x_train = torch.randn(9062, 10, 1032)
+y_train = torch.randn(9062, 10, 1032)
 
 print(x_train.shape)
 print(y_train.shape)
