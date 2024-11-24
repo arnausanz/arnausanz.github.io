@@ -1,7 +1,6 @@
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 import torch
-import data_prep
 import matplotlib.pyplot as plt
 from xlstm import xLSTMBlockStack
 from tqdm import tqdm
@@ -17,6 +16,7 @@ class ModelConfig:
         self.num_layers = kwargs.get('num_layers', None)
         self.dropout = kwargs.get('dropout', None)
         self.xLSTM_config = kwargs.get('xLSTM_config', None)
+        self.device = kwargs.get('device', 'cpu')
 
 class Model(nn.Module):
     def __init__(self, model_config):
@@ -47,8 +47,8 @@ class Model(nn.Module):
 
     def model_train(self, X_train, y_train, num_epochs=100, batch_size=32, lr=0.001, verbose=True, criterion=nn.MSELoss(), optimizer=torch.optim.Adam):
         # Convert to PyTorch tensors
-        X_train_tensor = torch.tensor(X_train, dtype=torch.float32)
-        y_train_tensor = torch.tensor(y_train, dtype=torch.float32)
+        X_train_tensor = torch.tensor(X_train, dtype=torch.float32).to(self.model_config.device)
+        y_train_tensor = torch.tensor(y_train, dtype=torch.float32).to(self.model_config.device)
 
         print('X_train_tensor shape:', X_train_tensor.shape)
         print('y_train_tensor shape:', y_train_tensor.shape)
@@ -78,8 +78,8 @@ class Model(nn.Module):
 
     def model_test(self, X_test, y_test):
         print('Testing the model...')
-        X_test_tensor = torch.tensor(X_test, dtype=torch.float32)
-        y_test_tensor = torch.tensor(y_test, dtype=torch.float32)
+        X_test_tensor = torch.tensor(X_test, dtype=torch.float32).to(self.model_config.device)
+        y_test_tensor = torch.tensor(y_test, dtype=torch.float32).to(self.model_config.device)
 
         test_data = TensorDataset(X_test_tensor, y_test_tensor)
         test_loader = DataLoader(test_data, batch_size=1, shuffle=False)

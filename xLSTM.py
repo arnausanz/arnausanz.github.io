@@ -10,8 +10,9 @@ from xlstm import (
     FeedForwardConfig,
 )
 
-ctxt = 2
-wdw = 2
+# Use cuda if available
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print('Device:', device)
 
 X, y, scalers = get_data_x(30, 10)
 
@@ -31,7 +32,7 @@ config = xLSTMBlockStackConfig(
     ),
     slstm_block=sLSTMBlockConfig(
         slstm=sLSTMLayerConfig(
-            backend="vanilla",
+            backend="vanilla" if device == "cpu" else "cuda",
             num_heads=4,
             conv1d_kernel_size=2,
             bias_init="powerlaw_blockdependent",
@@ -45,7 +46,7 @@ config = xLSTMBlockStackConfig(
 
 )
 
-model_config = ModelConfig(model_type='xLSTM', xLSTM_config=config, output_dim=y.shape[1])
+model_config = ModelConfig(model_type='xLSTM', xLSTM_config=config, output_dim=y.shape[1], device=device)
 
 model = Model(model_config)
 model.model_train(X_train, y_train, num_epochs=1, batch_size=5, lr=0.0005)
