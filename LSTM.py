@@ -1,7 +1,11 @@
+import torch
+
 from model.Model import Model, ModelConfig
 from model.data_prep import get_data
 
-X, y, scalers = get_data(180)
+torch.set_default_device('mps')
+
+X, y, scalers = get_data(10)
 
 # Split the data into training and testing sets
 train_size = int(0.8 * len(X))
@@ -12,5 +16,5 @@ model_config = ModelConfig(model_type='LSTM', input_dim=X.shape[2], output_dim=y
                            dropout=0.2)
 
 model = Model(model_config)
-model.model_train(X_train, y_train, num_epochs=5, batch_size=32, lr=0.0005)
+model.model_train(X_train, y_train, num_epochs=3, batch_size=32, lr=0.0005)
 test_loss = model.model_test(X_test, y_test)
