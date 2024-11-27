@@ -29,7 +29,6 @@ class Model(nn.Module):
             self.model_name = None
             self.this_model_src = None
             self.get_save_directory()
-            self.save_model_config()
 
 
     def _build_model(self):
@@ -131,41 +130,21 @@ class Model(nn.Module):
         os.mkdir('model')
         os.chdir(utils.get_root_dir())
 
-    def save_model_config(self):
-        """
-        Save the model configuration in the specific directory
-        :return: None
-        """
-        os.chdir(self.this_model_src)
-        with open('model_config.txt', 'w') as f:
-            f.write(f'Model type: {self.model_config.model_type}\n')
-            if self.model_config.model_type == 'LSTM':
-                f.write(f'Input dimension: {self.model_config.input_dim}\n')
-                f.write(f'Hidden dimension: {self.model_config.hidden_dim}\n')
-                f.write(f'Output dimension: {self.model_config.output_dim}\n')
-                f.write(f'Number of layers: {self.model_config.num_layers}\n')
-                f.write(f'Dropout: {self.model_config.dropout}\n')
-            elif self.model_config.model_type == 'xLSTM':
-                f.write(f'xLSTM configuration: {self.model_config.xLSTM_config}\n')
-        f.close()
-        os.chdir(utils.get_root_dir())
-
 
     def save_training(self):
         """
         Save the training process in the specific directory
         Things to save:
-        - Loss per epoch: A lot of metrics (MSE, RMSE, MAE, etc.)
-        - Training time: Log training time per epoch and total training time
-        - Accuracy: Log accuracy per epoch
+        - Model hyperparameters
+        - Training hyperparameters
+
         :return:
         """
         pass
 
     def save_testing(self, chart, title):
         """
-        # TODO --> Acabar de pensar les mètriques a guardar
-        If self.save is True, save the chart in the specific directory with the reservoir name, and the model number
+        Save this
         :param title: Title of the chart file
         :param chart: Chart to save
         :return: None
@@ -176,12 +155,24 @@ class Model(nn.Module):
 
     def save_model(self, model):
         """
-        Save the model in the specific directory
+        Save the model and its information. Specifically, save:
+        - Model architecture
+        - Model initial state
+        - Model hyperparameters
+        - Model configuration
+        - Model itself
         :param model: Model to save
         :return: None
         """
         os.chdir(self.this_model_src + '/model')
-        torch.save(model.state_dict(), 'model.pth')
+        # Save model architecture and configuration
+        with open('model_architecture.txt', 'w') as f:
+            f.write('Model type: ' + str(self.model_config.model_type))
+            
+
+
+        # Save model itself
+        torch.save(model, 'model.pth')
         os.chdir(utils.get_root_dir())
 
     def load_model(self):
