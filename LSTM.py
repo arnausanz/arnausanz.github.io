@@ -40,7 +40,7 @@ def new_model():
 """
 
 
-X, y, scalers = get_data(360)
+X, y, scalers = get_data(120)
 train_size = int(0.8 * len(X))
 X_train, X_test = X[:train_size], X[train_size:]
 y_train, y_test = y[:train_size], y[train_size:]
@@ -52,9 +52,9 @@ def new_model():
     Once this function is used, it's copied-pasted into a comment above to save the configuration
     :return: None
     """
-    model_config = ModelConfig(model_type='LSTM', input_dim=X.shape[2], output_dim=y.shape[1], num_layers=7, hidden_dim=64, dropout=0.2)
+    model_config = ModelConfig(model_type='LSTM', input_dim=X.shape[2], output_dim=y.shape[1], num_layers=7, hidden_dim=128, dropout=0.2)
     model = Model(model_config)
-    model.model_train(X_train, y_train, num_epochs=100, batch_size=64, lr=0.0001)
+    model.model_train(X_train, y_train, num_epochs=250, batch_size=32, lr=0.0005)
     model.model_predict(X_test, y_test)
     model.save_model()
 
