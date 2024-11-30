@@ -1,6 +1,0 @@
-Model type: LSTM
-Input dimension: 258
-Hidden dimension: 128
-Output dimension: 9
-Number of layers: 3
-Dropout: 0.2

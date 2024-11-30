@@ -207,7 +207,7 @@ def _get_data(update=False, save=True, with_icgc=False):
     return data
 
 
-def get_data(window_size, using_target_windows = False, update=False, save=True, with_icgc=False):
+def get_data(window_size, using_target_windows = True, update=False, save=True, with_icgc=False):
     data = _get_data(update, save, with_icgc).set_index('date')
     # Split the data into X and y
     y_columns = ['0', '1', '2', '3', '4', '5', '6', '7', '8']
@@ -234,7 +234,7 @@ def get_data(window_size, using_target_windows = False, update=False, save=True,
     print("Data prepared successfully")
     return X_seq, y_seq, (x_scaler, y_scaler)
 
-def get_data_x(window_size, num_subwindows, using_target_windows = False, update=False, save=True, with_icgc=False):
+def get_data_x(window_size, num_subwindows, using_target_windows = True, update=False, save=True, with_icgc=False):
     data = _get_data(update, save, with_icgc).set_index('date')
     # Split the data into X and y
     y_columns = ['0', '1', '2', '3', '4', '5', '6', '7', '8']
