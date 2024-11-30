@@ -184,6 +184,12 @@ def prepare_icgc_data(save=True):
 
 
 def update_data(save=True, with_icgc=False):
+    """
+    Updates the final data for the model.
+    :param save: if save, data will be stored in the final_data directory (replacing actual)
+    :param with_icgc: NOT USED --> As for now, ICGC data is not fitting with model architecture
+    :return: None
+    """
     prepare_aca_data(save)
     prepare_meteocat_data(save)
     prepare_icgc_data(save) if with_icgc else None
@@ -200,14 +206,32 @@ def update_data(save=True, with_icgc=False):
 
 
 def _get_data(update=False, save=True, with_icgc=False):
+    """
+    Getter for the data file
+    :param update: To decide if data has to be updated before getting it
+    :param save: if save, data will be stored in the final_data directory (replacing actual) --> Used in update_data method
+    :param with_icgc: NOT USED --> As for now, ICGC data is not fitting with model architecture
+    :return: data (DataFrame)
+    """
     if update:
         update_data(save, with_icgc)
     data = pd.read_csv(final_data_dir_path + 'final_data.csv')
-    data['date'] = pd.to_datetime(data['date'], format='%Y-%m-%d')
+    data['date'] = pd.to_datetime(data['date'], format='%Y-%m-%d') # Just to ensure
     return data
 
 
-def get_data(window_size, using_target_windows = True, update=False, save=True, with_icgc=False):
+def get_data(window_size, update=False, save=True, with_icgc=False):
+    """
+    Prepares the data for the model (getting from the file and preparing it with appropriate transformations, scaling and windowing)
+
+    ONLY USED FOR LSTM MODEL (if using xLSTM, use get_data_x)
+
+    :param window_size: Size of the window
+    :param update: To decide if data has to be updated before getting it --> Used in _get_data method
+    :param save: if save, data will be stored in the final_data directory (replacing actual) --> Used in update_data method
+    :param with_icgc: NOT USED --> As for now, ICGC data is not fitting with model architecture
+    :return: X, y --> data for the model + scalers (to be used after model predictions if needed)
+    """
     data = _get_data(update, save, with_icgc).set_index('date')
     # Split the data into X and y
     y_columns = ['0', '1', '2', '3', '4', '5', '6', '7', '8']
@@ -217,12 +241,9 @@ def get_data(window_size, using_target_windows = True, update=False, save=True, 
     X_seq = []
     y_seq = []
     for i in range(len(X) - window_size):
-        if using_target_windows:
-            _X = X.iloc[i:i + window_size]
-            past_y = y.iloc[i:i + window_size - 1].values
-            X_seq.append(np.hstack([_X[:-1], past_y]))
-        else:
-            X_seq.append(X.iloc[i:i + window_size].values)
+        _X = X.iloc[i:i + window_size]
+        past_y = y.iloc[i:i + window_size - 1].values
+        X_seq.append(np.hstack([_X[:-1], past_y]))
         y_seq.append(y.iloc[i + window_size - 1].values)
     X_seq = np.array(X_seq)
     y_seq = np.array(y_seq)
@@ -234,7 +255,19 @@ def get_data(window_size, using_target_windows = True, update=False, save=True, 
     print("Data prepared successfully")
     return X_seq, y_seq, (x_scaler, y_scaler)
 
-def get_data_x(window_size, num_subwindows, using_target_windows = True, update=False, save=True, with_icgc=False):
+def get_data_x(window_size, num_subwindows, update=False, save=True, with_icgc=False):
+    """
+    Prepares the data for the model (getting from the file and preparing it with appropriate transformations, scaling and windowing)
+
+    ONLY USED FOR xLSTM MODEL (if using LSTM, use get_data)
+
+    :param window_size: Size of the window
+    :param num_subwindows: Number of subwindows to divide the window
+    :param update: To decide if data has to be updated before getting it --> Used in _get_data method
+    :param save: if save, data will be stored in the final_data directory (replacing actual) --> Used in update_data method
+    :param with_icgc: NOT USED --> As for now, ICGC data is not fitting with model architecture
+    :return: X, y --> data for the model + scalers (to be used after model predictions if needed)
+    """
     data = _get_data(update, save, with_icgc).set_index('date')
     # Split the data into X and y
     y_columns = ['0', '1', '2', '3', '4', '5', '6', '7', '8']
@@ -243,6 +276,7 @@ def get_data_x(window_size, num_subwindows, using_target_windows = True, update=
     # Create the sequences
     X_seq = []
     y_seq = []
+    # Get subwindows (used in xLSTM)
     subwindow_size = window_size // num_subwindows
     for i in range(len(X) - window_size):
         subwindows = []
@@ -250,15 +284,10 @@ def get_data_x(window_size, num_subwindows, using_target_windows = True, update=
             start = i + j * subwindow_size
             end = start + subwindow_size
             subwindow_x = X.iloc[start:end]
-            subwindow_y = y.iloc[start:end - 1] if using_target_windows else None
+            subwindow_y = y.iloc[start:end - 1]
 
-            # Create subwindow features
+            # Create subwindow features --> For more information to the model
             subwindow_features = np.hstack([
-                subwindow_x.mean(axis=0),
-                subwindow_x.std(axis=0),
-                subwindow_x.min(axis=0),
-                subwindow_x.max(axis=0)
-            ]) if not using_target_windows else np.hstack([
                 subwindow_x.mean(axis=0),
                 subwindow_x.std(axis=0),
                 subwindow_x.min(axis=0),
