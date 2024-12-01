@@ -1,7 +1,10 @@
 import json
 import os
 import pickle
+import random
 import time
+
+import numpy as np
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 import torch
@@ -67,6 +70,10 @@ class Model(nn.Module):
         self.device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
         torch.set_default_device(self.device)
         print('Device:', self.device)
+        # Work with the same seed for reproducibility
+        random.seed(2)
+        np.random.seed(2)
+        torch.manual_seed(2)
 
         self.save = save
         # Check if the model is being loaded
@@ -171,9 +178,10 @@ class Model(nn.Module):
                 json.dump(training_stats, f, indent=4)
         return self
 
-    def model_predict(self, X_test, y_test = None, test_mode = True):
+    def model_predict(self, X_test, y_test = None, test_mode = True, show = False):
         """
         Make predictions with the model trained
+        :param show: Show the testing charts
         :param X_test: X data to test (or predict)
         :param y_test: y data to test (or predict)
         :param test_mode: If test mode, evaluate the model performance and save testing information
@@ -186,7 +194,7 @@ class Model(nn.Module):
         # If the code reaches this point, it's in test mode
         y_test_tensor = torch.tensor(y_test, dtype=torch.float32).to(self.device)
         test_data = TensorDataset(X_test_tensor, y_test_tensor)
-        test_loader = DataLoader(test_data, batch_size=1, shuffle=False, generator=torch.Generator(device=self.device))
+        test_loader = DataLoader(test_data, batch_size=24, shuffle=False, generator=torch.Generator(device=self.device))
         self.eval()
         all_outputs = []
         # Make predictions
@@ -201,7 +209,8 @@ class Model(nn.Module):
         if self.save:
             with open(f'{self.this_model_src}/testing/metrics.json', 'w') as f:
                 json.dump(metrics, f, indent=4)
-
+            # Save predictions
+            np.save(f'{self.this_model_src}/testing/predictions.npy', y_pred)
         # Generate the testing charts
         for i in range(y_test.shape[1]):
             # Plot with a high resolution, big text and specific colors
@@ -211,7 +220,11 @@ class Model(nn.Module):
             plt.legend(fontsize=20)
             plt.title(f'Reservoir {i}', fontsize=24)
             # Save the chart
-            self.save_testing_chart(plt, f'reservoir_{i}')
+            if self.save:
+                self.save_testing_chart(plt, f'reservoir_{i}')
+            # Show the chart
+            if show:
+                plt.show()
 
 
     def get_save_directory(self):
@@ -273,6 +286,7 @@ class Model(nn.Module):
         # Save the rest of the model configuration into a JSON file
         with open(f'model_{self.model_name}.json', 'w') as f:
             json.dump(model_config_dict, f, indent=4)
+        # Return to main directory
         os.chdir(utils.get_root_dir())
 
     def load_model(self):
@@ -292,6 +306,5 @@ class Model(nn.Module):
         self._build_model()
         # Load the weights of the model
         self.load_state_dict(torch.load('model.pth', weights_only=True))
-        self.eval()
         # Return to main directory
         os.chdir(utils.get_root_dir())

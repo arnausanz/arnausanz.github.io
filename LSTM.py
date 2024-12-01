@@ -1,3 +1,5 @@
+import torch
+
 from model.Model import Model, ModelConfig
 from model.data_prep import get_data
 from DataExtraction.utils import get_root_dir
@@ -11,8 +13,7 @@ X_train, X_test = X[:train_size], X[train_size:]
 y_train, y_test = y[:train_size], y[train_size:]
 
 def new_model():
-    model_config = ModelConfig(model_type='LSTM', input_dim=X.shape[2], output_dim=y.shape[1], num_layers=5, hidden_dim=128,
-                           dropout=0.2)
+    model_config = ModelConfig(model_type='LSTM', input_dim=X.shape[2], output_dim=y.shape[1], num_layers=5, hidden_dim=128, dropout=0.2)
     model = Model(model_config)
     model.model_train(X_train, y_train, num_epochs=300, batch_size=24, lr=0.00001)
     model.model_predict(X_test, y_test)
@@ -29,18 +30,34 @@ X_train, X_test = X[:train_size], X[train_size:]
 y_train, y_test = y[:train_size], y[train_size:]
 
 def new_model():
-    model_config = ModelConfig(model_type='LSTM', input_dim=X.shape[2], output_dim=y.shape[1], num_layers=3, hidden_dim=64,
-                           dropout=0.2)
+    model_config = ModelConfig(model_type='LSTM', input_dim=X.shape[2], output_dim=y.shape[1], num_layers=3, hidden_dim=64, dropout=0.2)
     model = Model(model_config)
     model.model_train(X_train, y_train, num_epochs=200, batch_size=64, lr=0.0001)
     model.model_predict(X_test, y_test)
     model.save_model()
     # model.move_track_emissions_file() # Deleted function to save emissions data
-    
+"""
+
+"""
+----------------- MODEL 6 -----------------
+
+X, y, scalers = get_data(90)
+train_size = int(0.8 * len(X))
+X_train, X_test = X[:train_size], X[train_size:]
+y_train, y_test = y[:train_size], y[train_size:]
+
+
+def new_model():
+    model_config = ModelConfig(model_type='LSTM', input_dim=X_train.shape[2], output_dim=y_train.shape[1], num_layers=5, hidden_dim=128, dropout=0.2)
+    model = Model(model_config)
+    model.model_train(X_train, y_train, num_epochs=200, batch_size=12, lr=0.00001)
+    model.model_predict(X_test, y_test)
+    model.save_model()
+    return model
 """
 
 
-X, y, scalers = get_data(120)
+X, y, scalers = get_data(365)
 train_size = int(0.8 * len(X))
 X_train, X_test = X[:train_size], X[train_size:]
 y_train, y_test = y[:train_size], y[train_size:]
@@ -52,11 +69,14 @@ def new_model():
     Once this function is used, it's copied-pasted into a comment above to save the configuration
     :return: None
     """
-    model_config = ModelConfig(model_type='LSTM', input_dim=X.shape[2], output_dim=y.shape[1], num_layers=7, hidden_dim=128, dropout=0.2)
+    model_config = ModelConfig(model_type='LSTM', input_dim=X.shape[2], output_dim=y.shape[1], num_layers=8, hidden_dim=128, dropout=0.2)
     model = Model(model_config)
-    model.model_train(X_train, y_train, num_epochs=250, batch_size=32, lr=0.0005)
+    total_params = sum(p.numel() for p in model.parameters())
+    print(f"Total number of parameters: {total_params}")
+    model.model_train(X_train, y_train, num_epochs=500, batch_size=180, lr=0.00001)
     model.model_predict(X_test, y_test)
     model.save_model()
+    return model
 
 def load_existing(name):
     """
