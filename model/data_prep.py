@@ -220,13 +220,14 @@ def _get_data(update=False, save=True, with_icgc=False):
     return data
 
 
-def get_data(window_size, update=False, save=True, with_icgc=False):
+def get_data(window_size, steps_fwd=0, update=False, save=True, with_icgc=False):
     """
     Prepares the data for the model (getting from the file and preparing it with appropriate transformations, scaling and windowing)
 
     ONLY USED FOR LSTM MODEL (if using xLSTM, use get_data_x)
 
     :param window_size: Size of the window
+    :param steps_fwd: Number of steps forward to predict
     :param update: To decide if data has to be updated before getting it --> Used in _get_data method
     :param save: if save, data will be stored in the final_data directory (replacing actual) --> Used in update_data method
     :param with_icgc: NOT USED --> As for now, ICGC data is not fitting with model architecture
@@ -235,27 +236,26 @@ def get_data(window_size, update=False, save=True, with_icgc=False):
     data = _get_data(update, save, with_icgc).set_index('date')
     # Split the data into X and y
     y_columns = ['0', '1', '2', '3', '4', '5', '6', '7', '8']
-    X = data.drop(columns=y_columns)
-    y = data[y_columns]
-    # Create the sequences
-    X_seq = []
-    y_seq = []
-    for i in range(len(X) - window_size):
-        _X = X.iloc[i:i + window_size]
-        past_y = y.iloc[i:i + window_size - 1].values
-        X_seq.append(np.hstack([_X[:-1], past_y]))
-        y_seq.append(y.iloc[i + window_size - 1].values)
-    X_seq = np.array(X_seq)
-    y_seq = np.array(y_seq)
-    # Scale the data with MinMaxScaler for each sequence individually
+    X = data.drop(columns=y_columns).values
+    y = data[y_columns].values
+    # Scale the entire dataset
     x_scaler = MinMaxScaler()
     y_scaler = MinMaxScaler()
-    X_seq = x_scaler.fit_transform(X_seq.reshape(-1, X_seq.shape[-1])).reshape(X_seq.shape)
-    y_seq = y_scaler.fit_transform(y_seq)
+    X = x_scaler.fit_transform(X)
+    y = y_scaler.fit_transform(y)
+    # Create sequences
+    X_seq, y_seq = [], []
+    for i in range(len(X) - window_size - steps_fwd + 1):
+        _X = X[i:i + window_size]
+        past_y = y[i:i + window_size - 1]
+        X_seq.append(np.hstack([_X[:-1], past_y]))
+        y_seq.append(y[i + window_size + steps_fwd - 1])
+    X_seq = np.array(X_seq)
+    y_seq = np.array(y_seq)
     print("Data prepared successfully")
     return X_seq, y_seq, (x_scaler, y_scaler)
 
-def get_data_x(window_size, num_subwindows, update=False, save=True, with_icgc=False):
+def get_data_x(window_size, num_subwindows, steps_fwd=0, update=False, save=True, with_icgc=False):
     """
     Prepares the data for the model (getting from the file and preparing it with appropriate transformations, scaling and windowing)
 
@@ -263,6 +263,7 @@ def get_data_x(window_size, num_subwindows, update=False, save=True, with_icgc=F
 
     :param window_size: Size of the window
     :param num_subwindows: Number of subwindows to divide the window
+    :param steps_fwd: Number of steps forward to predict
     :param update: To decide if data has to be updated before getting it --> Used in _get_data method
     :param save: if save, data will be stored in the final_data directory (replacing actual) --> Used in update_data method
     :param with_icgc: NOT USED --> As for now, ICGC data is not fitting with model architecture
@@ -271,21 +272,25 @@ def get_data_x(window_size, num_subwindows, update=False, save=True, with_icgc=F
     data = _get_data(update, save, with_icgc).set_index('date')
     # Split the data into X and y
     y_columns = ['0', '1', '2', '3', '4', '5', '6', '7', '8']
-    X = data.drop(columns=y_columns)
-    y = data[y_columns]
-    # Create the sequences
-    X_seq = []
-    y_seq = []
-    # Get subwindows (used in xLSTM)
+    X = data.drop(columns=y_columns).values
+    y = data[y_columns].values
+    # Scale the entire dataset
+    x_scaler = MinMaxScaler()
+    y_scaler = MinMaxScaler()
+    X = x_scaler.fit_transform(X)
+    y = y_scaler.fit_transform(y)
+    # Create subwindow sequences
+    X_seq, y_seq = [], []
     subwindow_size = window_size // num_subwindows
-    for i in range(len(X) - window_size):
+    for i in range(len(X) - window_size - steps_fwd + 1):
         subwindows = []
         for j in range(num_subwindows):
             start = i + j * subwindow_size
             end = start + subwindow_size
-            subwindow_x = X.iloc[start:end]
-            subwindow_y = y.iloc[start:end - 1]
-
+            if end + steps_fwd > len(X):  # Prevent using future data
+                break
+            subwindow_x = X[start:end]
+            subwindow_y = y[start:end - 1 - steps_fwd]
             # Create subwindow features --> For more information to the model
             subwindow_features = np.hstack([
                 subwindow_x.mean(axis=0),
@@ -298,15 +303,11 @@ def get_data_x(window_size, num_subwindows, update=False, save=True, with_icgc=F
                 subwindow_y.max(axis=0)
             ])
             subwindows.append(subwindow_features)
-        X_seq.append(subwindows)
-        y_seq.append(y.iloc[i + window_size - 1])
+        if len(subwindows) == num_subwindows:  # Only append complete sequences
+            X_seq.append(subwindows)
+            y_seq.append(y[i + window_size + steps_fwd - 1])
     X_seq = np.array(X_seq)
     y_seq = np.array(y_seq)
-    # Scale the data with MinMaxScaler for each sequence individually
-    x_scaler = MinMaxScaler()
-    y_scaler = MinMaxScaler()
-    X_seq = x_scaler.fit_transform(X_seq.reshape(-1, X_seq.shape[-1])).reshape(X_seq.shape)
-    y_seq = y_scaler.fit_transform(y_seq)
     print("Data prepared successfully")
     return X_seq, y_seq, (x_scaler, y_scaler)
 

@@ -16,11 +16,11 @@ from sklearn.metrics import root_mean_squared_error as rmse
 from DataExtraction.utils import get_root_dir
 from . import data_prep
 
-def get_split_data(model_type, window_size, subwindow_size = None, train_size = 0.8, device = 'mps'):
+def get_split_data(model_type, window_size, subwindow_size = None, steps_fwd=0, train_size = 0.8, device = 'mps'):
     if model_type == 'LSTM':
-        X, y, scalers = data_prep.get_data(window_size)
+        X, y, scalers = data_prep.get_data(window_size, steps_fwd)
     elif model_type == 'xLSTM':
-        X, y, scalers = data_prep.get_data_x(window_size, subwindow_size)
+        X, y, scalers = data_prep.get_data_x(window_size, subwindow_size, steps_fwd)
     else:
         raise ValueError("Invalid model type")
     train_size = int(train_size * len(X))
@@ -71,7 +71,7 @@ def load_model(model_name):
     return model
 
 class ModelConfig:
-    def __init__(self, **kwargs):
+    def __init__(self, steps_forward, **kwargs):
         self.model_name = _get_model_name()
         self.model_type = kwargs.get('model_type', None)
         self.train_size = kwargs.get('train_size', None)
@@ -90,6 +90,7 @@ class ModelConfig:
         self.optimizer = kwargs.get('optimizer', torch.optim.Adam)
         self.model_src = _create_model_directory(self.model_name)
         self.device = kwargs.get('device', 'mps')
+        self.steps_forward = steps_forward
 
 class Model(nn.Module):
     def __init__(self, model_config):
