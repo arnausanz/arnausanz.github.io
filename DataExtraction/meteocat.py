@@ -42,7 +42,7 @@ def add_today_information(var_code):
     corrected_var = next((int(value[0]) for key, value in _MAP_DAILY_MEASURED_VARS.items() if value[1] == var_code), "")
     year = str(datetime.datetime.now().year)
     month = str(datetime.datetime.now().month)
-    day = str(datetime.datetime.now().day)
+    day = str(datetime.datetime.now().day) if len(str(datetime.datetime.now().day)) == 2 else "0" + str(datetime.datetime.now().day)
     url = "https://api.meteo.cat/xema/v1/variables/mesurades/" + var_code + "/" + year + "/" + month + "/" + day + "?codiEstacio="
     response = requests.get(url, headers=__HEADERS)
     df = pd.json_normalize(response.json(), record_path=['variables', 'lectures'], meta=['codi', ['variables', 'codi']])
@@ -68,7 +68,7 @@ def transform_daily_data(data: pd.DataFrame) -> pd.DataFrame:
     :param data: DataFrame with the daily data
     :return: DataFrame with the transformed data
     """
-    data.drop(columns=['percentatge'], inplace=True)
+    data.drop(columns=['percentatge'], inplace=True) if 'percentatge' in data.columns else None
     data['data'] = pd.to_datetime(data['data'], format="%Y-%m-%dZ").dt.date
     return data
 

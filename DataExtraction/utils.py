@@ -13,7 +13,7 @@ def set_meteocat_api_key() -> str:
     :return: Meteocat API key
     """
     load_dotenv()
-    return os.getenv("METEOCAT_API_KEY_2")
+    return os.getenv("METEOCAT_API_KEY")
 
 def save_df_to_csv(df, file_name, path = 'data/raw', header = True) -> None:
     """
