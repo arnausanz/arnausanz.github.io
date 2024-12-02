@@ -209,9 +209,9 @@ class Model(nn.Module):
                 # Ensure tensor is converted to numpy
                 y_test = y_test.cpu().numpy() if torch.is_tensor(y_test) else y_test
                 y_pred = y_pred.cpu().numpy() if torch.is_tensor(y_pred) else y_pred
-                plt.figure(figsize=(32, 18))
-                plt.plot(y_test[:, i], label='True', color='#dbbe04', linewidth=3.5)
-                plt.plot(y_pred[:, i], label='Predicted', color='#32b8aa', linewidth=3.5)
+                plt.figure(figsize=(18, 12))
+                plt.plot(y_test[:, i], label='True', color='#dbbe04', linewidth=2.5)
+                plt.plot(y_pred[:, i], label='Predicted', color='#32b8aa', linewidth=2.5)
                 plt.legend(fontsize=20)
                 plt.title(f'Reservoir {i + 1} predicted vs true water level')
                 plt.legend()
