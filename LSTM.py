@@ -1,90 +1,48 @@
-import torch
-
-from model.Model import Model, ModelConfig
-from model.data_prep import get_data
-from DataExtraction.utils import get_root_dir
+from model.model import Model, ModelConfig, save_model, load_model, get_split_data
 
 """
 ----------------- MODEL 1 -----------------
+X_train_1, X_test_1, y_train_1, y_test_1, scalers_1 = get_split_data('LSTM',180)
+m_cfg_1 = ModelConfig(
+    model_type = 'LSTM',
+    num_layers = 5,
+    hidden_dim = 128,
+    dropout = 0.2,
+    num_epochs = 300,
+    batch_size = 24,
+    lr = 0.00001,
+    input_dim = X_train_1.shape[2],
+    output_dim = y_train_1.shape[1]
+)
+m1 = Model(m_cfg_1)
+print('Model 1 # Parameters:', sum(p.numel() for p in m1.parameters()))
+m1.model_train(X_train_1, y_train_1)
+m1.model_predict(X_test_1, y_test_1)
+save_model(m1)
 
-X, y, scalers = get_data(180)
-train_size = int(0.8 * len(X))
-X_train, X_test = X[:train_size], X[train_size:]
-y_train, y_test = y[:train_size], y[train_size:]
-
-def new_model():
-    model_config = ModelConfig(model_type='LSTM', input_dim=X.shape[2], output_dim=y.shape[1], num_layers=5, hidden_dim=128, dropout=0.2)
-    model = Model(model_config)
-    model.model_train(X_train, y_train, num_epochs=300, batch_size=24, lr=0.00001)
-    model.model_predict(X_test, y_test)
-    model.save_model()
-    # model.move_track_emissions_file() # Deleted function to save emissions data
+# m_1 = load_model('model_1')
+# m_1.model_predict(X_test_1, y_test_1)
 """
 
 """
------------------ MODEL 3 -----------------
+----------------- MODEL 2 -----------------"""
+X_train_2, X_test_2, y_train_2, y_test_2, scalers_2 = get_split_data('LSTM',90)
+m_cfg_2 = ModelConfig(
+    model_type = 'LSTM',
+    num_layers = 5,
+    hidden_dim = 128,
+    dropout = 0.2,
+    num_epochs = 300,
+    batch_size = 24,
+    lr = 0.00001,
+    input_dim = X_train_2.shape[2],
+    output_dim = y_train_2.shape[1]
+)
+m1 = Model(m_cfg_2)
+print('Model 1 # Parameters:', sum(p.numel() for p in m1.parameters()))
+m1.model_train(X_train_2, y_train_2)
+m1.model_predict(X_test_2, y_test_2)
+save_model(m1)
 
-X, y, scalers = get_data(360)
-train_size = int(0.8 * len(X))
-X_train, X_test = X[:train_size], X[train_size:]
-y_train, y_test = y[:train_size], y[train_size:]
-
-def new_model():
-    model_config = ModelConfig(model_type='LSTM', input_dim=X.shape[2], output_dim=y.shape[1], num_layers=3, hidden_dim=64, dropout=0.2)
-    model = Model(model_config)
-    model.model_train(X_train, y_train, num_epochs=200, batch_size=64, lr=0.0001)
-    model.model_predict(X_test, y_test)
-    model.save_model()
-    # model.move_track_emissions_file() # Deleted function to save emissions data
-"""
-
-"""
------------------ MODEL 6 -----------------
-
-X, y, scalers = get_data(90)
-train_size = int(0.8 * len(X))
-X_train, X_test = X[:train_size], X[train_size:]
-y_train, y_test = y[:train_size], y[train_size:]
-
-
-def new_model():
-    model_config = ModelConfig(model_type='LSTM', input_dim=X_train.shape[2], output_dim=y_train.shape[1], num_layers=5, hidden_dim=128, dropout=0.2)
-    model = Model(model_config)
-    model.model_train(X_train, y_train, num_epochs=200, batch_size=12, lr=0.00001)
-    model.model_predict(X_test, y_test)
-    model.save_model()
-    return model
-"""
-
-
-X, y, scalers = get_data(365)
-train_size = int(0.8 * len(X))
-X_train, X_test = X[:train_size], X[train_size:]
-y_train, y_test = y[:train_size], y[train_size:]
-
-def new_model():
-    """
-    Function to create a new model with a specific configuration
-    It's used once and then the model is saved.
-    Once this function is used, it's copied-pasted into a comment above to save the configuration
-    :return: None
-    """
-    model_config = ModelConfig(model_type='LSTM', input_dim=X.shape[2], output_dim=y.shape[1], num_layers=8, hidden_dim=128, dropout=0.2)
-    model = Model(model_config)
-    total_params = sum(p.numel() for p in model.parameters())
-    print(f"Total number of parameters: {total_params}")
-    model.model_train(X_train, y_train, num_epochs=500, batch_size=180, lr=0.00001)
-    model.model_predict(X_test, y_test)
-    model.save_model()
-    return model
-
-def load_existing(name):
-    """
-    Function to load an existing model and make predictions
-    :param name: name of the model directory (e.g. 'model_1')
-    :return: pretrained model
-    """
-    model = Model(load=get_root_dir() + '/model/final_models/' + name, save=False)
-    return model
-
-new_model()
+# m_2 = load_model('model_2')
+# m_2.model_predict(X_test_2, y_test_2)
