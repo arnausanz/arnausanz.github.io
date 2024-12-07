@@ -16,11 +16,11 @@ from sklearn.metrics import root_mean_squared_error as rmse
 from DataExtraction.utils import get_root_dir
 from . import data_prep
 
-def get_split_data(model_type, window_size, subwindow_size = None, steps_fwd=0, train_size = 0.8, device = 'mps'):
+def get_split_data(model_type, window_size, num_subwindows = None, steps_fwd=0, train_size = 0.8, device ='mps'):
     if model_type == 'LSTM':
         X, y, scalers = data_prep.get_data(window_size, steps_fwd)
     elif model_type == 'xLSTM':
-        X, y, scalers = data_prep.get_data_x(window_size, subwindow_size, steps_fwd)
+        X, y, scalers = data_prep.get_data_x(window_size, num_subwindows, steps_fwd)
     else:
         raise ValueError("Invalid model type")
     train_size = int(train_size * len(X))
@@ -116,6 +116,7 @@ class Model(nn.Module):
             self.fc = nn.Linear(self.model_config.hidden_dim, self.model_config.output_dim)
         elif self.model_config.model_type == 'xLSTM':
             self.xlstm_stack = xLSTMBlockStack(self.model_config.xLSTM_config)
+            # self.dropout = nn.Dropout(self.model_config.dropout)
             self.fc = nn.Linear(self.model_config.xLSTM_config.embedding_dim, self.model_config.output_dim)
         else:
             raise ValueError("Invalid model type")
@@ -127,8 +128,8 @@ class Model(nn.Module):
             lstm_out = self.dropout(lstm_out[:, -1, :])
             output = self.fc(lstm_out)
         elif self.model_config.model_type == 'xLSTM':
-            x_lstm_out = self.xlstm_stack(x)
-            x_lstm_out = self.dropout(x_lstm_out[:, -1, :])
+            x_lstm_out = self.xlstm_stack(x)[:, -1, :]
+            #x_lstm_out = self.dropout(x_lstm_out[:, -1, :])
             output = self.fc(x_lstm_out)
         else:
             raise ValueError("Invalid model type")
@@ -175,7 +176,7 @@ class Model(nn.Module):
             json.dump(training_stats, f)
 
 
-    def model_predict(self, X_test, y_test, save=True, plot=True):
+    def model_predict(self, X_test, y_test, save=True, plot=True, force_save=False):
         print('Predicting...')
         self.eval()
         with torch.no_grad():
@@ -184,7 +185,7 @@ class Model(nn.Module):
             print(f'Loss: {loss.item():.4f}')
         # Save predictions, losses, and charts
         save = False if self.loaded else save
-        if save:
+        if save or force_save:
             # Save predictions in a numpy file
             os.chdir(self.model_config.model_src + '/test')
             y_pred = y_pred.cpu().numpy()
@@ -203,7 +204,7 @@ class Model(nn.Module):
                                             'r2': float(r2_score(y_test[:, i], y_pred[:, i]))}
             with open('losses.json', 'w') as f:
                 json.dump(losses, f)
-        if save or plot:
+        if save or plot or force_save:
             # Save or the charts of the predictions for each reservoir
             for i in range(self.model_config.output_dim):
                 # Ensure tensor is converted to numpy
@@ -215,7 +216,7 @@ class Model(nn.Module):
                 plt.legend(fontsize=20)
                 plt.title(f'Reservoir {i + 1} predicted vs true water level')
                 plt.legend()
-                if save:
+                if save or force_save:
                     plt.savefig(f'reservoir_{i+1}.png')
                 if plot:
                     plt.show()

@@ -282,16 +282,15 @@ def get_data_x(window_size, num_subwindows, steps_fwd=0, update=False, save=True
     # Create subwindow sequences
     X_seq, y_seq = [], []
     subwindow_size = window_size // num_subwindows
+
     for i in range(len(X) - window_size - steps_fwd + 1):
         subwindows = []
         for j in range(num_subwindows):
             start = i + j * subwindow_size
             end = start + subwindow_size
-            if end + steps_fwd > len(X):  # Prevent using future data
-                break
             subwindow_x = X[start:end]
-            subwindow_y = y[start:end - 1 - steps_fwd]
-            # Create subwindow features --> For more information to the model
+            subwindow_y = y[start:end]
+            # Create subwindow features
             subwindow_features = np.hstack([
                 subwindow_x.mean(axis=0),
                 subwindow_x.std(axis=0),
@@ -303,9 +302,10 @@ def get_data_x(window_size, num_subwindows, steps_fwd=0, update=False, save=True
                 subwindow_y.max(axis=0)
             ])
             subwindows.append(subwindow_features)
-        if len(subwindows) == num_subwindows:  # Only append complete sequences
+        if len(subwindows) == num_subwindows:
             X_seq.append(subwindows)
             y_seq.append(y[i + window_size + steps_fwd - 1])
+
     X_seq = np.array(X_seq)
     y_seq = np.array(y_seq)
     print("Data prepared successfully")
