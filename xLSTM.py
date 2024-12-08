@@ -4,7 +4,7 @@ import torch
 from xlstm import xLSTMBlockStackConfig, mLSTMBlockConfig, mLSTMLayerConfig, sLSTMBlockConfig, sLSTMLayerConfig, FeedForwardConfig
 from model.model import Model, ModelConfig, save_model, load_model, get_split_data
 
-
+"""
 # ----------------- MODEL 9/10/11/12 -----------------
 steps_forward = (30, 90, 180, 365)
 for step_forward in steps_forward:
@@ -86,3 +86,4 @@ for step_forward in steps_forward:
     m.model_predict(X_test, y_test, plot=False, force_save = True)
     del m
     torch.mps.empty_cache()
+"""
