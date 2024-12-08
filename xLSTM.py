@@ -87,3 +87,84 @@ for step_forward in steps_forward:
     del m
     torch.mps.empty_cache()
 """
+# ----------------- MODEL 21/22/23/24 -----------------
+steps_forward = (30, 90, 180, 365)
+for step_forward in steps_forward:
+    X_train, X_test, y_train, y_test, scalers = get_split_data('xLSTM', 90, num_subwindows=6, steps_fwd=step_forward)
+    print(X_train.shape)
+    config = xLSTMBlockStackConfig(
+        mlstm_block=mLSTMBlockConfig(mlstm=mLSTMLayerConfig(conv1d_kernel_size=4, qkv_proj_blocksize=4, num_heads=4)),
+        slstm_block=sLSTMBlockConfig(slstm=sLSTMLayerConfig(backend="vanilla", num_heads=4, conv1d_kernel_size=2,
+                                                            bias_init="powerlaw_blockdependent"),
+                                     feedforward=FeedForwardConfig(proj_factor=1.3, act_fn="gelu")),
+        context_length=X_train.shape[1],
+        num_blocks=7,
+        embedding_dim=X_train.shape[2],
+        slstm_at=[1, 5]
+    )
+    m_cfg = ModelConfig(
+        model_type = 'xLSTM',
+        xLSTM_config=config,
+        dropout = 0.3,
+        num_epochs = 250,
+        batch_size = 128,
+        lr = 0.0001,
+        output_dim = y_train.shape[1],
+        steps_forward = step_forward
+    )
+    m = Model(m_cfg)
+    model_name = m.model_config.model_name
+    print('Model # Parameters:', sum(p.numel() for p in m.parameters()))
+    m.model_train(X_train, y_train)
+    save_model(m)
+    # Save scalers in a pickle file
+    with open(m.model_config.model_src + '/scalers.pkl', 'wb') as f:
+        pickle.dump(scalers, f)
+    # Delete the model to save memory and delete also the cache from pytorch
+    del m
+    torch.mps.empty_cache()
+    m = load_model(model_name)
+    m.model_predict(X_test, y_test, plot=False, force_save = True)
+    del m
+    torch.mps.empty_cache()
+
+# ----------------- MODEL 25/26/27/28 -----------------
+steps_forward = (30, 90, 180, 365)
+for step_forward in steps_forward:
+    X_train, X_test, y_train, y_test, scalers = get_split_data('xLSTM', 180, num_subwindows=6, steps_fwd=step_forward)
+    print(X_train.shape)
+    config = xLSTMBlockStackConfig(
+        mlstm_block=mLSTMBlockConfig(mlstm=mLSTMLayerConfig(conv1d_kernel_size=4, qkv_proj_blocksize=4, num_heads=4)),
+        slstm_block=sLSTMBlockConfig(slstm=sLSTMLayerConfig(backend="vanilla", num_heads=4, conv1d_kernel_size=2,
+                                                            bias_init="powerlaw_blockdependent"),
+                                     feedforward=FeedForwardConfig(proj_factor=1.3, act_fn="gelu")),
+        context_length=X_train.shape[1],
+        num_blocks=3,
+        embedding_dim=X_train.shape[2],
+        slstm_at=[1]
+    )
+    m_cfg = ModelConfig(
+        model_type = 'xLSTM',
+        xLSTM_config=config,
+        dropout = 0.2,
+        num_epochs = 350,
+        batch_size = 64,
+        lr = 0.00001,
+        output_dim = y_train.shape[1],
+        steps_forward = step_forward
+    )
+    m = Model(m_cfg)
+    model_name = m.model_config.model_name
+    print('Model # Parameters:', sum(p.numel() for p in m.parameters()))
+    m.model_train(X_train, y_train)
+    save_model(m)
+    # Save scalers in a pickle file
+    with open(m.model_config.model_src + '/scalers.pkl', 'wb') as f:
+        pickle.dump(scalers, f)
+    # Delete the model to save memory and delete also the cache from pytorch
+    del m
+    torch.mps.empty_cache()
+    m = load_model(model_name)
+    m.model_predict(X_test, y_test, plot=False, force_save = True)
+    del m
+    torch.mps.empty_cache()
