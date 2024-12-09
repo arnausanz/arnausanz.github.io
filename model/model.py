@@ -90,7 +90,6 @@ class ModelConfig:
         self.model_src = _create_model_directory(self.model_name)
         self.device = kwargs.get('device', 'mps')
         self.steps_forward = steps_forward
-        self.num_parameters = None
 
 class Model(nn.Module):
     def __init__(self, model_config):
@@ -99,7 +98,6 @@ class Model(nn.Module):
         # Set default device
         torch.set_default_device(self.model_config.device)
         self._build_model()
-        self.model_config.num_parameters = sum(p.numel() for p in self.parameters()) if self.model_config.num_parameters is None else self.model_config.num_parameters
         self.loaded = False
 
     def _build_model(self):
