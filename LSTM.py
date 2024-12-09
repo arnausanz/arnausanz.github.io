@@ -111,14 +111,14 @@ for step_forward in steps_forward:
 # ----------------- MODEL 29/30/31/32 -----------------
 steps_forward = (30, 90, 180, 365)
 for step_forward in steps_forward:
-    X_train, X_test, y_train, y_test, scalers = get_split_data('LSTM', 90, steps_fwd=step_forward)
+    X_train, X_test, y_train, y_test, scalers = get_split_data('LSTM', 180, steps_fwd=step_forward)
     print(X_train.shape)
     m_cfg = ModelConfig(
         model_type = 'LSTM',
-        num_layers = 2,
-        hidden_dim = 816,
-        dropout = 0.25,
-        num_epochs = 1,
+        num_layers = 4,
+        hidden_dim = 32,
+        dropout = 0.3,
+        num_epochs = 650,
         batch_size = 128,
         lr = 0.00005,
         input_dim = X_train.shape[2],
