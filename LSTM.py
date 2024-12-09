@@ -107,7 +107,7 @@ for step_forward in steps_forward:
     del m
     torch.mps.empty_cache()
 """
-
+"""
 # ----------------- MODEL 29/30/31/32 -----------------
 steps_forward = (30, 90, 180, 365)
 for step_forward in steps_forward:
@@ -141,3 +141,4 @@ for step_forward in steps_forward:
     m.model_predict(X_test, y_test, plot=False, force_save=True)
     del m
     torch.mps.empty_cache()
+"""
