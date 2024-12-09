@@ -2,7 +2,6 @@ import json
 import os
 import pickle
 import time
-
 import numpy as np
 import torch
 from matplotlib import pyplot as plt
@@ -91,6 +90,7 @@ class ModelConfig:
         self.model_src = _create_model_directory(self.model_name)
         self.device = kwargs.get('device', 'mps')
         self.steps_forward = steps_forward
+        self.num_parameters = None
 
 class Model(nn.Module):
     def __init__(self, model_config):
@@ -99,12 +99,10 @@ class Model(nn.Module):
         # Set default device
         torch.set_default_device(self.model_config.device)
         self._build_model()
+        self.model_config.num_parameters = sum(p.numel() for p in self.parameters()) if self.model_config.num_parameters is None else self.model_config.num_parameters
         self.loaded = False
 
     def _build_model(self):
-        # Save window size and subwindow size
-        self.window_size = self.model_config.window_size
-        self.subwindow_size = self.model_config.subwindow_size if self.model_config.model_type == 'xLSTM' else None
         if self.model_config.model_type == 'LSTM':
             self.lstm = nn.LSTM(
                 input_size=self.model_config.input_dim,
@@ -116,7 +114,7 @@ class Model(nn.Module):
             self.fc = nn.Linear(self.model_config.hidden_dim, self.model_config.output_dim)
         elif self.model_config.model_type == 'xLSTM':
             self.xlstm_stack = xLSTMBlockStack(self.model_config.xLSTM_config)
-            # self.dropout = nn.Dropout(self.model_config.dropout)
+            self.dropout = nn.Dropout(self.model_config.dropout)
             self.fc = nn.Linear(self.model_config.xLSTM_config.embedding_dim, self.model_config.output_dim)
         else:
             raise ValueError("Invalid model type")
@@ -129,7 +127,7 @@ class Model(nn.Module):
             output = self.fc(lstm_out)
         elif self.model_config.model_type == 'xLSTM':
             x_lstm_out = self.xlstm_stack(x)[:, -1, :]
-            #x_lstm_out = self.dropout(x_lstm_out[:, -1, :])
+            x_lstm_out = self.dropout(x_lstm_out[:, -1, :])
             output = self.fc(x_lstm_out)
         else:
             raise ValueError("Invalid model type")
@@ -223,19 +221,3 @@ class Model(nn.Module):
                 plt.close()
         os.chdir(get_root_dir())
         return y_pred
-
-"""
-X_train, X_test, y_train, y_test, scalers = get_split_data('LSTM', 180)
-input_size = X_train.shape[2]
-output_size = y_train.shape[1]
-a = ModelConfig(model_type='LSTM', input_dim=input_size, output_dim=output_size, num_layers=5, hidden_dim=128, dropout=0.2, num_epochs=3, batch_size=24, lr=0.00001)
-model = Model(a)
-
-# model = load_model('model_8')
-
-
-model.model_train(X_train, y_train)
-y_pred = model.model_predict(X_test, y_test)
-save_model(model)
-
-"""

@@ -32,9 +32,9 @@ for step_forward in steps_forward:
         pickle.dump(scalers, f)
 """
 
-"""
+
 # ----------------- MODEL 5/6/7/8 -----------------
-steps_forward = (30, 90, 180, 365)
+steps_forward = [365]
 for step_forward in steps_forward:
     X_train, X_test, y_train, y_test, scalers = get_split_data('LSTM', 270, steps_fwd=step_forward)
     print(X_train.shape)
@@ -65,8 +65,8 @@ for step_forward in steps_forward:
     m.model_predict(X_test, y_test, plot=False, force_save=True)
     del m
     torch.mps.empty_cache()
-"""
 
+"""
 # ----------------- MODEL 17/18/19/20 -----------------
 steps_forward = (30, 90, 180, 365)
 for step_forward in steps_forward:
@@ -99,6 +99,4 @@ for step_forward in steps_forward:
     m.model_predict(X_test, y_test, plot=False, force_save=True)
     del m
     torch.mps.empty_cache()
-
-# m = load_model('model_1')
-# m.model_predict(X_test_1, y_test_1)
+"""
