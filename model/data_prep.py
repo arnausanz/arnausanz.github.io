@@ -82,7 +82,7 @@ def prepare_meteocat_data(save=True):
     # Rename index to date
     processed_meteocat.rename(columns={'index': 'date'}, inplace=True)
     # Drop columns with more than 50% of Nan values
-    processed_meteocat.dropna(thresh=0.75 * len(processed_meteocat), axis=1, inplace=True)
+    processed_meteocat.dropna(thresh=0.7499 * len(processed_meteocat), axis=1, inplace=True)
     # Fill nan values with the previous day value
     processed_meteocat.ffill(inplace=True)
     # Fill any remaining missing values with the next day value
@@ -203,6 +203,8 @@ def update_data(save=True, with_icgc=False):
         final_data = pd.merge(final_data, processed_icgc, on=['sensor_code', 'station_code'], how='inner')
     if save:
         final_data.to_csv(final_data_dir_path + 'final_data.csv', index=False)
+    else:
+        return final_data
 
 
 def _get_data(update=False, save=True, with_icgc=False):
