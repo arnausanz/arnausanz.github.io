@@ -65,7 +65,7 @@ def load_model(model_name):
     with open(model_src + '/model_config.pkl', 'rb') as f:
         model_config = pickle.load(f)
     model = Model(model_config)
-    model.load_state_dict(torch.load(model.model_config.model_src+'/model.pth', weights_only=True))
+    model.load_state_dict(torch.load(model.model_config.model_src+'/model.pth', weights_only=False))
     model.loaded = True
     return model
 
