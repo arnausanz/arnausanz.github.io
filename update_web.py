@@ -21,5 +21,13 @@ torch.mps.empty_cache()
 sensors = pd.read_csv('model/final_data/sensor_codes.csv')
 
 preds_df = (pd.DataFrame(pred_2, index = sensors['name'], columns=['value']))
-preds_df['value'] = preds_df['value'].apply(lambda x: str(round(x, 2))+'hm3')
+preds_df['value'] = preds_df['value'].apply(lambda x: str(round(x, 2))+' hm3')
+preds_df = preds_df.T
 preds_df.to_csv('web_source.csv')
+
+today_web_csv = pd.read_csv('data/processed/aca/aca_daily_today.csv')
+today_web_csv.index = today_web_csv['name']
+today_web_csv = today_web_csv[[ 'current_volume']]
+today_web_csv['current_volume'] = today_web_csv['current_volume'].apply(lambda x: str(round(x, 2))+' hm3')
+today_web_csv = today_web_csv.T
+today_web_csv.to_csv('web_today.csv')

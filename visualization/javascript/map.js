@@ -48,10 +48,22 @@ var embassamentIcon = L.divIcon({
 
 
 Promise.all([
-    fetch("data/processed/aca/sensor_metadata.csv").then(response => response.text()),
-    fetch("web_source.csv").then(response => response.text())
-]).then(([sensorCsvText, webSourceCsvText]) => {
+    fetch("data/processed/aca/sensor_metadata_web.csv").then(response => response.text()),
+    fetch("web_source.csv").then(response => response.text()),
+    fetch("web_today.csv").then(response => response.text())
+]).then(([sensorCsvText, webSourceCsvText, webTodayCsvText]) => {
     const parseCsv = (csvText) => {
+        const lines = csvText.split("\n").filter(line => line.trim() !== "");
+        const headers = lines[0].split(",");
+        const values = lines[1].split(",");
+        const result = {};
+        headers.forEach((header, index) => {
+            result[header.trim()] = values[index].trim();
+        });
+        return result;
+    };
+
+    const parseSensorCsv = (csvText) => {
         const lines = csvText.split("\n").filter(line => line.trim() !== "");
         const headers = lines[0].split(",");
         return lines.slice(1).map(line => {
@@ -64,24 +76,18 @@ Promise.all([
         });
     };
 
-    const sensorData = parseCsv(sensorCsvText);
+    const sensorData = parseSensorCsv(sensorCsvText);
     const webSourceData = parseCsv(webSourceCsvText);
+    const webTodayData = parseCsv(webTodayCsvText);
 
-    console.log("Parsed Sensor Data:", sensorData);
-    console.log("Parsed Web Source Data:", webSourceData);
-
-    const webSourceMap = webSourceData.reduce((acc, item) => {
-        acc[item.name] = item[0];  // Correctly map the volume value
-        return acc;
-    }, {});
-
-    console.log("Web Source Map:", webSourceMap);
+    const webSourceMap = webSourceData;
+    const webTodayMap = webTodayData;
 
     sensorData.forEach(point => {
         if (!isNaN(point.latitude) && !isNaN(point.longitude)) {
-            const volume = webSourceMap[point.name] || "Unknown volume";
-            console.log(`Sensor: ${point.name}, Volume: ${volume}`);
-            const popupContent = `${point.name}<br>Volume: ${volume}`;
+            const todayVolume = webTodayMap[point.name] || "Unknown volume";
+            const expectedVolume = webSourceMap[point.name] || "Unknown volume";
+            const popupContent = `<b>${point.name}</b><br><i>Today's volume:</i> <b>${todayVolume}</b><br><i>Volume expected (in 30 days):</i> <b>${expectedVolume}</b>`;
             L.marker([parseFloat(point.latitude), parseFloat(point.longitude)], {icon: embassamentIcon})
                 .addTo(sensorLayer)
                 .bindPopup(popupContent);
