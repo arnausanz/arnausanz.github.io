@@ -1,10 +1,10 @@
 var map = L.map('map', {
-    center: [41.75, 1.7],   // Centra el mapa en coordenadas específicas
-    zoom: 8,              // Nivel de zoom inicial
-    zoomControl: false,   // Desactiva el control de zoom
-    dragging: false,      // Deshabilita el desplazamiento del mapa
-    scrollWheelZoom: false,  // Deshabilita el zoom con la rueda del ratón
-    doubleClickZoom: false   // Deshabilita el zoom al hacer doble clic
+    center: [41.75, 1.7],
+    zoom: 8,
+    zoomControl: false,
+    dragging: false,
+    scrollWheelZoom: false,
+    doubleClickZoom: false
 });
 
 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
@@ -18,30 +18,26 @@ fetch(GeoJson)
         return response.json();
     })
     .then(function(data) {
-        // Define el estilo para la capa GeoJSON
         var style = {
-            "color": "black",       // Color de la línea del borde
-            "weight": 1,          // Grosor de la línea del borde
-            "opacity": 0.5,         // Opacidad de la línea del borde
-            "fillOpacity": 0      // Opacidad de relleno del polígono (0 para eliminar el relleno)
+            "color": "black",
+            "weight": 1,
+            "opacity": 0.5,
+            "fillOpacity": 0
         };
 
-        // Añade la capa GeoJSON al mapa y desactiva la interactividad
         L.geoJSON(data, {
             style: style,
-            interactive: false  // Desactiva la interactividad de la capa GeoJSON
+            interactive: false
         }).addTo(map);
-    })
+    });
 
 var sensorLayer = L.layerGroup();
 
 var embassamentIcon = L.divIcon({
-    className: 'embassament-icon',  // Definim la classe CSS
+    className: 'embassament-icon',
     html: `
         <svg width="25" height="25" viewBox="-2.5 -2.5 25.5 25.5">
-            <!-- Cercle blau per a l'aigua -->
             <circle cx="12" cy="12" r="10" fill="#6BB8FF" stroke="#329DFF" stroke-width="1.5"/>
-            <!-- Ones blanques -->
             <path d="M6,13 Q12,9 18,13 Q12,17 6,13 Z" fill="#BCDFFF" opacity="1"/>
             <path d="M6,17 Q12,13 18,17 Q12,21 6,17 Z" fill="#BCDFFF" opacity="1"/>
         </svg>
@@ -50,33 +46,50 @@ var embassamentIcon = L.divIcon({
     iconAnchor: [15, 15]
 });
 
-fetch("data/processed/aca/sensor_metadata.csv")
-    .then(response => response.text())
-    .then(csvText => {
+
+Promise.all([
+    fetch("data/processed/aca/sensor_metadata.csv").then(response => response.text()),
+    fetch("web_source.csv").then(response => response.text())
+]).then(([sensorCsvText, webSourceCsvText]) => {
+    const parseCsv = (csvText) => {
         const lines = csvText.split("\n").filter(line => line.trim() !== "");
         const headers = lines[0].split(",");
-        const points = lines.slice(1).map(line => {
+        return lines.slice(1).map(line => {
             const values = line.split(",");
-            const point = {};
+            const result = {};
             headers.forEach((header, index) => {
-                point[header.trim()] = values[index].trim();
+                result[header.trim()] = values[index].trim();
             });
-            return {
-                name: point.name,
-                lat: parseFloat(point.latitude),
-                lon: parseFloat(point.longitude)
-            };
+            return result;
         });
-        console.log(points);
+    };
 
-        points.forEach(point => {
-            if (!isNaN(point.lat) && !isNaN(point.lon)) {
-                L.marker([point.lat, point.lon], {icon: embassamentIcon}).addTo(sensorLayer).bindPopup(point.name);
-            }
-        });
+    const sensorData = parseCsv(sensorCsvText);
+    const webSourceData = parseCsv(webSourceCsvText);
 
-        sensorLayer.addTo(map);
+    console.log("Parsed Sensor Data:", sensorData);
+    console.log("Parsed Web Source Data:", webSourceData);
+
+    const webSourceMap = webSourceData.reduce((acc, item) => {
+        acc[item.name] = item[0];  // Correctly map the volume value
+        return acc;
+    }, {});
+
+    console.log("Web Source Map:", webSourceMap);
+
+    sensorData.forEach(point => {
+        if (!isNaN(point.latitude) && !isNaN(point.longitude)) {
+            const volume = webSourceMap[point.name] || "Unknown volume";
+            console.log(`Sensor: ${point.name}, Volume: ${volume}`);
+            const popupContent = `${point.name}<br>Volume: ${volume}`;
+            L.marker([parseFloat(point.latitude), parseFloat(point.longitude)], {icon: embassamentIcon})
+                .addTo(sensorLayer)
+                .bindPopup(popupContent);
+        }
     });
+
+    sensorLayer.addTo(map);
+});
 
 var baseLayers = {};
 var overlays = {

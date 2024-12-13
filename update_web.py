@@ -20,4 +20,6 @@ torch.mps.empty_cache()
 
 sensors = pd.read_csv('model/final_data/sensor_codes.csv')
 
-pd.DataFrame(pred_2.reshape(1, 9), columns = sensors['name']).T.to_csv('web_source.csv')
+preds_df = (pd.DataFrame(pred_2, index = sensors['name'], columns=['value']))
+preds_df['value'] = preds_df['value'].apply(lambda x: str(round(x, 2))+'hm3')
+preds_df.to_csv('web_source.csv')
