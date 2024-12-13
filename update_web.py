@@ -1,5 +1,5 @@
 import pickle
-
+import pandas as pd
 import torch
 
 from model.data_prep import update_data
@@ -17,4 +17,7 @@ with open(m2.model_config.model_src + '/scalers.pkl', 'rb') as f:
 pred_2 = scalers_2[-1].inverse_transform(m2.forward(X_test).cpu().detach().numpy())[-1]
 del m2
 torch.mps.empty_cache()
-print(pred_2)
+
+sensors = pd.read_csv('model/final_data/sensor_codes.csv')
+
+pd.DataFrame(pred_2.reshape(1, 9), columns = sensors['name']).T.to_csv('web_source.csv')
