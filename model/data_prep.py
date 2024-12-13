@@ -81,8 +81,12 @@ def prepare_meteocat_data(save=True):
     processed_meteocat = processed_meteocat.set_index('date').reindex(date_range).reset_index()
     # Rename index to date
     processed_meteocat.rename(columns={'index': 'date'}, inplace=True)
+    # Save column 1000_R1 and add at position 48
+    r1 = processed_meteocat['1000_R1']
     # Drop columns with more than 50% of Nan values
-    processed_meteocat.dropna(thresh=0.7499 * len(processed_meteocat), axis=1, inplace=True)
+    processed_meteocat.dropna(thresh=0.75 * len(processed_meteocat), axis=1, inplace=True)
+    # Add column 1000_R1 at position 48
+    processed_meteocat.insert(48, '1000_R1', r1) # The training was done with this column at position 48 and now it disappeared
     # Fill nan values with the previous day value
     processed_meteocat.ffill(inplace=True)
     # Fill any remaining missing values with the next day value
