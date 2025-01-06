@@ -26,7 +26,7 @@ def get_daily_data(var_code = None, year = None, month = None) -> pd.DataFrame:
     :param month: Month of the data
     :return: DataFrame with the daily data
     """
-    url = "https://api.meteo.cat/xema/v1/variables/estadistics/diaris/" + var_code + "?codiEstacio=&any=" + year + "&mes=" + month
+    url = "https://api.meteo.cat/xema/v1/variables/estadistics/diaris/" + var_code + "?codiEstacio=&any=" + "2025" + "&mes=" + "01"
     response = requests.get(url, headers=__HEADERS)
     data_df = pd.json_normalize(response.json(), record_path=['valors'], meta=['codiEstacio', 'codiVariable'])
     return data_df
@@ -41,7 +41,7 @@ def add_today_information(var_code):
     # Map the variable code to the correct one
     corrected_var = next((int(value[0]) for key, value in _MAP_DAILY_MEASURED_VARS.items() if value[1] == var_code), "")
     year = str(datetime.datetime.now().year)
-    month = str(datetime.datetime.now().month)
+    month = str(datetime.datetime.now().month) if len(str(datetime.datetime.now().month)) == 2 else "0" + str(datetime.datetime.now().month)
     day = str(datetime.datetime.now().day) if len(str(datetime.datetime.now().day)) == 2 else "0" + str(datetime.datetime.now().day)
     url = "https://api.meteo.cat/xema/v1/variables/mesurades/" + var_code + "/" + year + "/" + month + "/" + day + "?codiEstacio="
     response = requests.get(url, headers=__HEADERS)

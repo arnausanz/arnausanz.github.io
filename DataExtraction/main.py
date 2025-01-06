@@ -37,5 +37,3 @@ for var in meteocat_vars:
 
 # Update today data files
 utils.update_today_data_file()
-
-# TODO --> Fer correr update també dels dataframes finals??
