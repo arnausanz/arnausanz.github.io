@@ -44,8 +44,8 @@ def get_daily_data():
     Returns the daily data from the ACA API
     :return: DataFrame with the daily data
     """
-    date_from = utils.get_date('yesterday')
-    date_to = utils.get_date('today')
+    date_from = utils.get_date('yesterday').strftime('%d/%m/%Y')
+    date_to = utils.get_date('today').strftime('%d/%m/%Y')
     data_cols = ['value', 'timestamp', 'location', 'sensor']
     df_all_data = pd.DataFrame(columns=data_cols) # All retrieved data will be stored here
     sensor_codes = get_all_sensor_codes()
